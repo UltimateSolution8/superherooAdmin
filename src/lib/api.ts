@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 const API_BASE_URL =
   process.env.API_BASE_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'http://localhost:8080';
+  'https://superheroobackend.onrender.com';
 
 export type ApiResult<T> =
   | { ok: true; data: T }
@@ -22,11 +22,16 @@ export async function apiFetch<T>(
   headers.set('Content-Type', headers.get('Content-Type') ?? 'application/json');
   if (access) headers.set('Authorization', `Bearer ${access}`);
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-    cache: 'no-store',
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+      cache: 'no-store',
+    });
+  } catch {
+    return { ok: false, status: 0, errorText: 'backend_unreachable' };
+  }
 
   if (!res.ok) {
     const errorText = await safeText(res);

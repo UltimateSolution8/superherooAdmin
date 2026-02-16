@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 const API_BASE_URL =
   process.env.API_BASE_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'http://localhost:8080';
+  'https://superheroobackend.onrender.com';
 
 function isDevOtpEnabled() {
   return (process.env.DEV_SHOW_OTP || 'false').toLowerCase() === 'true';
@@ -18,12 +18,17 @@ export async function startAdminOtp(formData: FormData) {
     redirect('/login?error=phone_required');
   }
 
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/otp/start`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, role: 'ADMIN' }),
-    cache: 'no-store',
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/v1/auth/otp/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, role: 'ADMIN' }),
+      cache: 'no-store',
+    });
+  } catch {
+    redirect('/login?error=backend_unreachable');
+  }
 
   if (!res.ok) {
     redirect('/login?error=otp_start_failed');
@@ -64,12 +69,17 @@ export async function verifyAdminOtp(formData: FormData) {
     redirect('/login?step=otp&error=otp_required');
   }
 
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/otp/verify`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, otp, role: 'ADMIN' }),
-    cache: 'no-store',
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/v1/auth/otp/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp, role: 'ADMIN' }),
+      cache: 'no-store',
+    });
+  } catch {
+    redirect('/login?step=otp&error=backend_unreachable');
+  }
 
   if (!res.ok) {
     redirect('/login?step=otp&error=otp_invalid');
@@ -109,12 +119,17 @@ export async function loginAdminPassword(formData: FormData) {
     redirect('/login?error=email_password_required');
   }
 
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/password/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-    cache: 'no-store',
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/api/v1/auth/password/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+      cache: 'no-store',
+    });
+  } catch {
+    redirect('/login?error=backend_unreachable');
+  }
 
   if (!res.ok) {
     redirect('/login?error=invalid_credentials');
