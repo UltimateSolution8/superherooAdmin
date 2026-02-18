@@ -16,8 +16,14 @@ export default async function LoginPage({
   return (
     <main className="min-h-dvh grid place-items-center px-6">
       <section className="w-full max-w-md rounded-2xl border border-foreground/10 bg-background/80 backdrop-blur p-6 shadow-sm">
-        <header className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Superheroo Admin</h1>
+        <header className="space-y-3">
+          <div className="flex items-center gap-3">
+            <img src="/superlogo.png" alt="Superheroo" className="h-10 w-10 rounded-xl object-cover" />
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Superheroo Admin</h1>
+              <p className="text-xs text-foreground/60">Internal operations console</p>
+            </div>
+          </div>
           <p className="text-sm text-foreground/70">
             Sign in with phone OTP or email/password. For production, OTP is delivered via SMS.
           </p>
@@ -91,6 +97,14 @@ export default async function LoginPage({
             Sign in with password
           </button>
         </form>
+
+        <div className="mt-6 text-center text-sm text-foreground/70">
+          Need a buyer/helper account?{' '}
+          <a className="font-semibold text-foreground hover:underline" href="/signup">
+            Create one here
+          </a>
+          .
+        </div>
       </section>
     </main>
   );

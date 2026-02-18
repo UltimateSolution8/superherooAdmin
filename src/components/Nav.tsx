@@ -4,7 +4,11 @@ export function Nav() {
   return (
     <nav className="flex items-center justify-between border-b border-foreground/10 px-6 py-4">
       <div className="flex items-center gap-3">
-        <div className="h-9 w-9 rounded-xl bg-foreground text-background grid place-items-center font-semibold">H</div>
+        <img
+          src="/superlogo.png"
+          alt="Superheroo"
+          className="h-9 w-9 rounded-xl object-cover"
+        />
         <div className="leading-tight">
           <div className="text-sm font-semibold">Superheroo</div>
           <div className="text-xs text-foreground/60">Admin Console</div>
@@ -25,6 +29,9 @@ export function Nav() {
         </Link>
         <Link className="text-foreground/80 hover:text-foreground" href="/tasks">
           Tasks
+        </Link>
+        <Link className="text-foreground/80 hover:text-foreground" href="/signup">
+          Create User
         </Link>
         <Link className="text-foreground/80 hover:text-foreground" href="/">
           Dashboard
