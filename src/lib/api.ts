@@ -39,8 +39,15 @@ export async function apiFetch<T>(
   }
 
   const text = await safeText(res);
-  const data = (text ? JSON.parse(text) : null) as T;
-  return { ok: true, data };
+  if (!text) {
+    return { ok: true, data: null as T };
+  }
+  try {
+    const data = JSON.parse(text) as T;
+    return { ok: true, data };
+  } catch {
+    return { ok: false, status: res.status, errorText: 'invalid_json' };
+  }
 }
 
 async function safeText(res: Response): Promise<string> {

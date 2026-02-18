@@ -25,9 +25,6 @@ export default async function DashboardPage() {
               Quick view of onboarding, live demand, and support workflows.
             </p>
           </div>
-          <div className="text-xs text-foreground/60">
-            API: <span className="font-mono">{process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL}</span>
-          </div>
         </header>
 
         <section className="mt-8 grid gap-4 sm:grid-cols-2">
