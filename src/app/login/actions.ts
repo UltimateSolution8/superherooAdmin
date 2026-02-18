@@ -12,6 +12,16 @@ function isDevOtpEnabled() {
   return (process.env.DEV_SHOW_OTP || 'false').toLowerCase() === 'true';
 }
 
+async function safeJson(res: Response): Promise<any | null> {
+  try {
+    const text = await res.text();
+    if (!text) return null;
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 export async function startAdminOtp(formData: FormData) {
   const phone = String(formData.get('phone') || '').trim();
   if (!phone) {
@@ -34,7 +44,10 @@ export async function startAdminOtp(formData: FormData) {
     redirect('/login?error=otp_start_failed');
   }
 
-  const json = (await res.json()) as { devOtp?: string };
+  const json = (await safeJson(res)) as { devOtp?: string } | null;
+  if (!json) {
+    redirect('/login?error=invalid_response');
+  }
   const cookieStore = await cookies();
   cookieStore.set('him_admin_login_phone', phone, {
     httpOnly: true,
@@ -85,7 +98,10 @@ export async function verifyAdminOtp(formData: FormData) {
     redirect('/login?step=otp&error=otp_invalid');
   }
 
-  const json = (await res.json()) as { accessToken: string; refreshToken: string };
+  const json = (await safeJson(res)) as { accessToken?: string; refreshToken?: string };
+  if (!json?.accessToken || !json?.refreshToken) {
+    redirect('/login?step=otp&error=invalid_response');
+  }
   cookieStore.set('him_admin_access', json.accessToken, {
     httpOnly: true,
     sameSite: 'lax',
@@ -135,7 +151,10 @@ export async function loginAdminPassword(formData: FormData) {
     redirect('/login?error=invalid_credentials');
   }
 
-  const json = (await res.json()) as { accessToken: string; refreshToken: string; user?: { role?: string } };
+  const json = (await safeJson(res)) as { accessToken?: string; refreshToken?: string; user?: { role?: string } };
+  if (!json?.accessToken || !json?.refreshToken) {
+    redirect('/login?error=invalid_response');
+  }
   if (!json.user || json.user.role !== 'ADMIN') {
     redirect('/login?error=admin_only');
   }
