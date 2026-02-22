@@ -27,7 +27,7 @@ export default async function BuyersPage({
   const sp = searchParams ? await searchParams : undefined;
 
   const res = await apiFetch<Buyer[]>('/api/v1/admin/buyers');
-  const buyers = res.ok ? res.data : [];
+  const buyers = res.ok && Array.isArray(res.data) ? res.data : [];
 
   return (
     <div className="min-h-dvh">
