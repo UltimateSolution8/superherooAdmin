@@ -38,7 +38,7 @@ export default async function SupportTicketsPage({
   const selectedStatus = STATUSES.includes(status as (typeof STATUSES)[number]) ? status : '';
   const statusParam = selectedStatus ? `?status=${encodeURIComponent(selectedStatus)}` : '';
   const res = await apiFetch<Ticket[]>(`/api/v1/admin/support/tickets${statusParam}`);
-  const tickets = res.ok ? res.data : [];
+  const tickets = res.ok && Array.isArray(res.data) ? res.data : [];
 
   return (
     <div className="min-h-dvh">
