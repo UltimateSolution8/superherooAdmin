@@ -12,7 +12,7 @@ function isDevOtpEnabled() {
   return (process.env.DEV_SHOW_OTP || 'false').toLowerCase() === 'true';
 }
 
-async function safeJson(res: Response): Promise<any | null> {
+async function safeJson<T = unknown>(res: Response): Promise<T | null> {
   try {
     const text = await res.text();
     if (!text) return null;
