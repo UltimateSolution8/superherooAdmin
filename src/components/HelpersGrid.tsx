@@ -134,7 +134,7 @@ export function HelpersGrid({ helpers }: { helpers: Helper[] }) {
             },
             {
                 headerName: '',
-                field: 'id' as any,
+                field: 'id',
                 cellRenderer: ActionRenderer,
                 filter: false,
                 sortable: false,

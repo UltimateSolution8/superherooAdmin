@@ -104,7 +104,7 @@ export function TasksGrid({ tasks }: { tasks: Task[] }) {
             },
             {
                 headerName: '',
-                field: 'id' as any,
+                field: 'id',
                 cellRenderer: ActionRenderer,
                 filter: false,
                 sortable: false,

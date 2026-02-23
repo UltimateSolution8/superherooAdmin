@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { DataGrid } from '@/components/DataGrid';
 
@@ -131,7 +131,7 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelper[] }) {
             },
             {
                 headerName: 'Actions',
-                field: 'helperId' as any,
+                field: 'helperId',
                 cellRenderer: ActionsCellRenderer,
                 filter: false,
                 sortable: false,
