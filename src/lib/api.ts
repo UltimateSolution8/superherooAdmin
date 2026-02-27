@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 const API_BASE_URL =
   process.env.API_BASE_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'http://129.159.233.237:8081';
+  'http://159.89.167.248:8081';
 
 export type ApiResult<T> =
   | { ok: true; data: T }
