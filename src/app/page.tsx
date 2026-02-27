@@ -13,10 +13,12 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  const pendingRes = await apiFetch<PendingHelper[]>('/api/v1/admin/helpers/pending');
-  const pendingCount = pendingRes.ok ? pendingRes.data.length : 0;
+  const [pendingRes, tasksRes] = await Promise.all([
+    apiFetch<PendingHelper[]>('/api/v1/admin/helpers/pending'),
+    apiFetch<Task[]>('/api/v1/admin/tasks'),
+  ]);
 
-  const tasksRes = await apiFetch<Task[]>('/api/v1/admin/tasks');
+  const pendingCount = pendingRes.ok ? pendingRes.data.length : 0;
   const tasks = tasksRes.ok && Array.isArray(tasksRes.data) ? tasksRes.data : [];
 
   const searching = tasks.filter((t) => t.status === 'SEARCHING').length;
