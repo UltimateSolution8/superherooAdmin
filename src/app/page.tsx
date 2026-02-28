@@ -6,6 +6,15 @@ import { Nav } from '@/components/Nav';
 
 type PendingHelper = { helperId: string };
 type Task = { id: string; status: string; createdAt: string; title: string; urgency: string; budgetPaise: number };
+type Summary = {
+  pendingHelpers: number;
+  searchingTasks: number;
+  assignedTasks: number;
+  arrivedTasks: number;
+  startedTasks: number;
+  completedTasks: number;
+  totalRevenuePaise: number;
+};
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -13,19 +22,21 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  const pendingRes = await apiFetch<PendingHelper[]>('/api/v1/admin/helpers/pending');
-  const pendingCount = pendingRes.ok ? pendingRes.data.length : 0;
+  const [summaryRes, recentRes] = await Promise.all([
+    apiFetch<Summary>('/api/v1/admin/summary'),
+    apiFetch<Task[]>('/api/v1/admin/tasks/recent?limit=5'),
+  ]);
 
-  const tasksRes = await apiFetch<Task[]>('/api/v1/admin/tasks');
-  const tasks = tasksRes.ok && Array.isArray(tasksRes.data) ? tasksRes.data : [];
+  const summary = summaryRes.ok ? summaryRes.data : null;
+  const pendingCount = summary?.pendingHelpers ?? 0;
+  const searching = summary?.searchingTasks ?? 0;
+  const assigned = summary?.assignedTasks ?? 0;
+  const arrived = summary?.arrivedTasks ?? 0;
+  const started = summary?.startedTasks ?? 0;
+  const completed = summary?.completedTasks ?? 0;
+  const totalRevenue = summary?.totalRevenuePaise ?? 0;
 
-  const searching = tasks.filter((t) => t.status === 'SEARCHING').length;
-  const assigned = tasks.filter((t) => t.status === 'ASSIGNED').length;
-  const arrived = tasks.filter((t) => t.status === 'ARRIVED').length;
-  const started = tasks.filter((t) => t.status === 'STARTED').length;
-  const completed = tasks.filter((t) => t.status === 'COMPLETED').length;
-  const totalRevenue = tasks.filter((t) => t.status === 'COMPLETED').reduce((s, t) => s + (t.budgetPaise || 0), 0);
-  const recentTasks = [...tasks].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+  const recentTasks = recentRes.ok && Array.isArray(recentRes.data) ? recentRes.data : [];
 
   return (
     <div className="min-h-dvh">
