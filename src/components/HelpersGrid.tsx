@@ -63,7 +63,8 @@ function DocsRenderer(params: ICellRendererParams<HelperRow>) {
   );
 }
 
-function ActionRenderer({ data }: ICellRendererParams<HelperRow>) {
+function ActionRenderer(params: ICellRendererParams<HelperRow>) {
+  const { data, api } = params;
   const { state } = useAuth();
   if (!data) return null;
 
@@ -75,10 +76,10 @@ function ActionRenderer({ data }: ICellRendererParams<HelperRow>) {
       state.accessToken,
     );
     if (res.ok) {
-      window.location.reload();
+      api?.applyTransaction({ remove: [data] });
       return;
     }
-    alert('Failed to delete helper');
+    alert(`Failed to delete helper (${res.status || 'network'})`);
   };
 
   return (
@@ -152,6 +153,8 @@ export function HelpersGrid({ helpers }: { helpers: HelperRow[] }) {
       title="All Helpers"
       subtitle="Manage helper accounts, contact details, and KYC status."
       height={640}
+      dateField="createdAt"
+      exportFileName="superheroo-helpers.xlsx"
     />
   );
 }

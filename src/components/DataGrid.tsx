@@ -2,6 +2,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import type { ColDef, GridReadyEvent, GridApi } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from 'ag-grid-community';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -34,6 +36,8 @@ type Props<T> = {
   onGridReady?: (api: GridApi<T>) => void;
   domLayout?: 'normal' | 'autoHeight';
   extraContent?: React.ReactNode;
+  dateField?: keyof T;
+  exportFileName?: string;
 };
 
 export function DataGrid<T>({
@@ -48,9 +52,14 @@ export function DataGrid<T>({
   onGridReady,
   domLayout = 'normal',
   extraContent,
+  dateField,
+  exportFileName,
 }: Props<T>) {
   const gridRef = useRef<AgGridReact<T>>(null);
   const [filterText, setFilterText] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [gridApi, setGridApi] = useState<GridApi<T> | null>(null);
 
   const defaultColDef = useMemo<ColDef>(
     () => ({
@@ -66,6 +75,7 @@ export function DataGrid<T>({
   const handleGridReady = useCallback(
     (event: GridReadyEvent<T>) => {
       event.api.sizeColumnsToFit();
+      setGridApi(event.api);
       onGridReady?.(event.api);
     },
     [onGridReady],
@@ -75,6 +85,39 @@ export function DataGrid<T>({
     setFilterText(e.target.value);
   }, []);
 
+  const filteredRowData = useMemo(() => {
+    if (!dateField || (!dateFrom && !dateTo)) return rowData;
+    const fromTs = dateFrom ? new Date(`${dateFrom}T00:00:00`).getTime() : null;
+    const toTs = dateTo ? new Date(`${dateTo}T23:59:59`).getTime() : null;
+    return rowData.filter((row) => {
+      const raw = row[dateField];
+      if (!raw) return false;
+      const ts = new Date(raw as any).getTime();
+      if (!Number.isFinite(ts)) return false;
+      if (fromTs != null && ts < fromTs) return false;
+      if (toTs != null && ts > toTs) return false;
+      return true;
+    });
+  }, [dateField, dateFrom, dateTo, rowData]);
+
+  const handleExport = useCallback(() => {
+    const rows: T[] = [];
+    if (gridApi) {
+      gridApi.forEachNodeAfterFilterAndSort((node) => {
+        if (node.data) rows.push(node.data);
+      });
+    } else {
+      rows.push(...filteredRowData);
+    }
+    if (rows.length === 0) return;
+    const ws = XLSX.utils.json_to_sheet(rows as any[]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, title || 'Sheet1');
+    const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const name = exportFileName || `${title || 'export'}.xlsx`;
+    saveAs(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
+  }, [exportFileName, filteredRowData, gridApi, title]);
+
   return (
     <div className="space-y-4">
       {(title || subtitle || quickFilter) && (
@@ -83,8 +126,32 @@ export function DataGrid<T>({
             {title && <h2 className="text-lg font-semibold tracking-tight">{title}</h2>}
             {subtitle && <p className="text-sm text-foreground/60">{subtitle}</p>}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {extraContent}
+            {dateField && (
+              <div className="flex items-center gap-2 text-xs">
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="rounded-lg border border-foreground/15 bg-background px-2 py-2 text-xs"
+                />
+                <span className="text-foreground/40">to</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="rounded-lg border border-foreground/15 bg-background px-2 py-2 text-xs"
+                />
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleExport}
+              className="rounded-lg border border-foreground/15 bg-foreground/5 px-3 py-2 text-xs font-semibold hover:bg-foreground/10"
+            >
+              Export Excel
+            </button>
             {quickFilter && (
               <input
                 type="text"
@@ -107,7 +174,7 @@ export function DataGrid<T>({
         <AgGridReact<T>
           ref={gridRef}
           theme={customTheme}
-          rowData={rowData}
+          rowData={filteredRowData}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
           quickFilterText={filterText}
@@ -120,6 +187,9 @@ export function DataGrid<T>({
           suppressCellFocus={true}
           rowSelection="multiple"
           suppressRowClickSelection={true}
+          rowClassRules={{
+            'ag-row-alt': (params) => (params.node.rowIndex ?? 0) % 2 === 1,
+          }}
           noRowsOverlayComponent={() => (
             <div className="text-sm text-foreground/60 py-10">No data to display.</div>
           )}

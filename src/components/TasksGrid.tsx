@@ -123,6 +123,8 @@ export function TasksGrid({ tasks }: { tasks: TaskRow[] }) {
       title="Tasks"
       subtitle="View and manage all tasks across the platform."
       height={640}
+      dateField="createdAt"
+      exportFileName="superheroo-tasks.xlsx"
     />
   );
 }

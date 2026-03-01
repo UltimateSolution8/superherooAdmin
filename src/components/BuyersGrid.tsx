@@ -25,7 +25,8 @@ function StatusRenderer(params: ICellRendererParams<BuyerRow>) {
   return <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>{status}</span>;
 }
 
-function ActionRenderer({ data }: ICellRendererParams<BuyerRow>) {
+function ActionRenderer(params: ICellRendererParams<BuyerRow>) {
+  const { data, api } = params;
   const { state } = useAuth();
   if (!data) return null;
 
@@ -48,10 +49,10 @@ function ActionRenderer({ data }: ICellRendererParams<BuyerRow>) {
       state.accessToken,
     );
     if (res.ok) {
-      window.location.reload();
+      api?.applyTransaction({ update: [res.data] });
       return;
     }
-    alert('Failed to update buyer');
+    alert(`Failed to update buyer (${res.status || 'network'})`);
   };
 
   const del = async () => {
@@ -62,10 +63,10 @@ function ActionRenderer({ data }: ICellRendererParams<BuyerRow>) {
       state.accessToken,
     );
     if (res.ok) {
-      window.location.reload();
+      api?.applyTransaction({ remove: [data] });
       return;
     }
-    alert('Failed to delete buyer');
+    alert(`Failed to delete buyer (${res.status || 'network'})`);
   };
 
   return (
@@ -122,6 +123,8 @@ export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
       title="Buyers"
       subtitle="Manage buyer accounts and contact details."
       height={640}
+      dateField="createdAt"
+      exportFileName="superheroo-buyers.xlsx"
     />
   );
 }

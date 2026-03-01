@@ -12,9 +12,11 @@
   "dependencies": {
     "ag-grid-community": "^35.1.0",
     "ag-grid-react": "^35.1.0",
+    "file-saver": "^2.0.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-router-dom": "^6.28.0"
+    "react-router-dom": "^6.28.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4",
@@ -23,8 +25,8 @@
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9",
-    "typescript": "^5",
     "tailwindcss": "^4",
+    "typescript": "^5",
     "vite": "^6.1.1"
   }
 }
