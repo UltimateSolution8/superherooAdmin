@@ -68,6 +68,19 @@ function ActionRenderer(params: ICellRendererParams<HelperRow>) {
   const { state } = useAuth();
   if (!data) return null;
 
+  const reopenKyc = async () => {
+    const res = await apiFetch<void>(
+      `/api/v1/admin/helpers/${data.id}/reopen-kyc`,
+      { method: 'POST' },
+      state.accessToken,
+    );
+    if (res.ok) {
+      api?.applyTransaction({ update: [{ ...data, helperKycStatus: 'PENDING' }] });
+      return;
+    }
+    alert(`Failed to reopen KYC (${res.status || 'network'})`);
+  };
+
   const handleDelete = async () => {
     if (!confirm(`Delete helper ${data.displayName || data.id}?`)) return;
     const res = await apiFetch<void>(
@@ -83,12 +96,22 @@ function ActionRenderer(params: ICellRendererParams<HelperRow>) {
   };
 
   return (
-    <button
-      onClick={handleDelete}
-      className="rounded-lg border border-red-400/30 px-3 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-    >
-      Delete
-    </button>
+    <div className="flex items-center gap-2">
+      {(data.helperKycStatus === 'APPROVED' || data.helperKycStatus === 'REJECTED') ? (
+        <button
+          onClick={reopenKyc}
+          className="rounded-lg border border-amber-400/30 px-3 py-1 text-xs text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
+        >
+          Reopen KYC
+        </button>
+      ) : null}
+      <button
+        onClick={handleDelete}
+        className="rounded-lg border border-red-400/30 px-3 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+      >
+        Delete
+      </button>
+    </div>
   );
 }
 

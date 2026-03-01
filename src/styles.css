@@ -31,13 +31,13 @@ body {
 }
 
 .ag-theme-quartz {
-  --ag-background-color: var(--card);
+  --ag-background-color: rgba(10, 14, 20, 0.95);
   --ag-foreground-color: var(--foreground);
-  --ag-border-color: rgba(148, 163, 184, 0.2);
-  --ag-header-background-color: rgba(15, 23, 42, 0.6);
-  --ag-odd-row-background-color: rgba(15, 23, 42, 0.45);
-  --ag-row-hover-color: rgba(99, 102, 241, 0.08);
-  --ag-selected-row-background-color: rgba(99, 102, 241, 0.2);
+  --ag-border-color: rgba(148, 163, 184, 0.16);
+  --ag-header-background-color: rgba(255, 255, 255, 0.04);
+  --ag-odd-row-background-color: rgba(255, 255, 255, 0.02);
+  --ag-row-hover-color: rgba(99, 102, 241, 0.1);
+  --ag-selected-row-background-color: rgba(99, 102, 241, 0.16);
   --ag-input-border-color: rgba(148, 163, 184, 0.25);
   --ag-input-disabled-border-color: rgba(148, 163, 184, 0.1);
   --ag-header-foreground-color: var(--foreground);
@@ -45,17 +45,21 @@ body {
 }
 
 .ag-theme-quartz .ag-root-wrapper {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.8), rgba(2, 6, 23, 0.8));
-}
-
-.ag-theme-quartz .ag-row-alt {
-  background-color: rgba(15, 23, 42, 0.55);
+  background: rgba(10, 14, 20, 0.95);
 }
 
 .ag-theme-quartz .ag-header {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.ag-theme-quartz .ag-row {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.ag-theme-quartz .ag-row-alt {
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
 .ag-theme-quartz .ag-cell {
-  border-color: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.08);
 }

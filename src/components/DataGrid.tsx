@@ -118,15 +118,17 @@ export function DataGrid<T>({
     saveAs(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
   }, [exportFileName, filteredRowData, gridApi, title]);
 
+  const showToolbar = Boolean(title || subtitle || quickFilter || dateField || exportFileName || extraContent);
+
   return (
     <div className="space-y-4">
-      {(title || subtitle || quickFilter) && (
-        <div className="flex items-end justify-between gap-4">
+      {showToolbar ? (
+        <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
           <div className="space-y-1">
             {title && <h2 className="text-lg font-semibold tracking-tight">{title}</h2>}
             {subtitle && <p className="text-sm text-foreground/60">{subtitle}</p>}
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 justify-start lg:justify-end">
             {extraContent}
             {dateField && (
               <div className="flex items-center gap-2 text-xs">
@@ -148,7 +150,8 @@ export function DataGrid<T>({
             <button
               type="button"
               onClick={handleExport}
-              className="rounded-lg border border-foreground/15 bg-foreground/5 px-3 py-2 text-xs font-semibold hover:bg-foreground/10"
+              className="rounded-lg border border-foreground/15 bg-foreground/5 px-3 py-2 text-xs font-semibold hover:bg-foreground/10 disabled:opacity-50"
+              disabled={filteredRowData.length === 0}
             >
               Export Excel
             </button>
@@ -157,19 +160,19 @@ export function DataGrid<T>({
                 type="text"
                 value={filterText}
                 onChange={handleFilterChange}
-                placeholder="Quick search…"
+                placeholder="Search…"
                 className="rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm
                 placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/40
-                w-64 transition-shadow"
+                w-56 transition-shadow"
               />
             )}
           </div>
         </div>
-      )}
+      ) : null}
 
       <div
         style={domLayout === 'normal' ? { height: typeof height === 'number' ? `${height}px` : height } : undefined}
-        className="rounded-xl border border-foreground/10 overflow-hidden"
+        className="rounded-2xl border border-foreground/10 bg-card/60 overflow-hidden"
       >
         <AgGridReact<T>
           ref={gridRef}
