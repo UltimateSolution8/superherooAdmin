@@ -1,4 +1,5 @@
-import Link from 'next/link';
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../lib/auth';
 
 const navItems = [
   { label: 'Dashboard', href: '/', icon: '📊' },
@@ -11,10 +12,13 @@ const navItems = [
 ];
 
 export function Nav() {
+  const { logout } = useAuth();
+  const location = useLocation();
+
   return (
     <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-foreground/8">
-      <div className="mx-auto max-w-7xl flex items-center justify-between px-6 py-3">
-        <Link href="/" className="flex items-center gap-3 group">
+      <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-3 px-6 py-3">
+        <Link to="/" className="flex items-center gap-3 group">
           <img
             src="/superlogo.png"
             alt="Superheroo"
@@ -25,17 +29,28 @@ export function Nav() {
             <div className="text-[10px] text-foreground/50 font-medium uppercase tracking-wider">Admin Console</div>
           </div>
         </Link>
-        <div className="flex items-center gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              className="rounded-lg px-3 py-2 text-xs font-medium text-foreground/65 hover:text-foreground hover:bg-foreground/5 transition-colors"
-              href={item.href}
-            >
-              <span className="mr-1">{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
+        <div className="flex flex-wrap items-center gap-1">
+          {navItems.map((item) => {
+            const active = location.pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                className={`rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+                  active ? 'bg-foreground/10 text-foreground' : 'text-foreground/65 hover:text-foreground hover:bg-foreground/5'
+                }`}
+                to={item.href}
+              >
+                <span className="mr-1">{item.icon}</span>
+                {item.label}
+              </Link>
+            );
+          })}
+          <button
+            onClick={logout}
+            className="rounded-lg border border-foreground/15 px-3 py-2 text-xs font-medium text-foreground/70 hover:text-foreground hover:bg-foreground/5"
+          >
+            Sign out
+          </button>
         </div>
       </div>
     </nav>

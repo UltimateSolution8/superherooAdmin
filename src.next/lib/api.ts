@@ -1,31 +1,33 @@
+import 'server-only';
+
+import { cookies } from 'next/headers';
+
+const API_BASE_URL =
+  process.env.API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'http://159.89.167.248:8081';
+
 export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; errorText: string };
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.MODE === 'development' ? 'https://api.mysuperhero.xyz' : 'https://api.mysuperhero.xyz');
-
-export function getApiBaseUrl() {
-  return API_BASE_URL as string;
-}
-
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit,
-  accessToken?: string | null,
 ): Promise<ApiResult<T>> {
+  const cookieStore = await cookies();
+  const access = cookieStore.get('him_admin_access')?.value;
+
   const headers = new Headers(init?.headers);
-  if (!headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
-  }
-  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  headers.set('Content-Type', headers.get('Content-Type') ?? 'application/json');
+  if (access) headers.set('Authorization', `Bearer ${access}`);
 
   let res: Response;
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
       headers,
+      cache: 'no-store',
     });
   } catch {
     return { ok: false, status: 0, errorText: 'backend_unreachable' };
@@ -37,9 +39,12 @@ export async function apiFetch<T>(
   }
 
   const text = await safeText(res);
-  if (!text) return { ok: true, data: null as T };
+  if (!text) {
+    return { ok: true, data: null as T };
+  }
   try {
-    return { ok: true, data: JSON.parse(text) as T };
+    const data = JSON.parse(text) as T;
+    return { ok: true, data };
   } catch {
     return { ok: false, status: res.status, errorText: 'invalid_json' };
   }
