@@ -35,7 +35,8 @@ function DocsRenderer(params: ICellRendererParams<PendingHelperRow>) {
   );
 }
 
-function ActionRenderer({ data }: ICellRendererParams<PendingHelperRow>) {
+function ActionRenderer(params: ICellRendererParams<PendingHelperRow>) {
+  const { data, api } = params;
   const { state } = useAuth();
   if (!data) return null;
 
@@ -45,8 +46,11 @@ function ActionRenderer({ data }: ICellRendererParams<PendingHelperRow>) {
       { method: 'POST' },
       state.accessToken,
     );
-    if (res.ok) window.location.reload();
-    else alert('Failed to approve');
+    if (res.ok) {
+      api?.applyTransaction({ remove: [data] });
+      return;
+    }
+    alert(`Failed to approve (${res.status || 'network'})`);
   };
 
   const reject = async () => {
@@ -56,8 +60,11 @@ function ActionRenderer({ data }: ICellRendererParams<PendingHelperRow>) {
       { method: 'POST', body: JSON.stringify({ reason }) },
       state.accessToken,
     );
-    if (res.ok) window.location.reload();
-    else alert('Failed to reject');
+    if (res.ok) {
+      api?.applyTransaction({ remove: [data] });
+      return;
+    }
+    alert(`Failed to reject (${res.status || 'network'})`);
   };
 
   return (
@@ -117,6 +124,8 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
       title="Pending KYC"
       subtitle="Review helper documents and approve/reject KYC."
       height={640}
+      dateField="kycSubmittedAt"
+      exportFileName="superheroo-pending-kyc.xlsx"
     />
   );
 }

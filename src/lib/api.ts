@@ -2,9 +2,17 @@ export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; errorText: string };
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.MODE === 'development' ? 'https://api.mysuperhero.xyz' : 'https://api.mysuperhero.xyz');
+function normalizeBase(input: string): string {
+  const trimmed = input.trim().replace(/\/+$/, '');
+  if (!trimmed) return '';
+  if (!/^https?:\/\//i.test(trimmed)) return '';
+  return trimmed;
+}
+
+const envBase = typeof import.meta.env.VITE_API_BASE_URL === 'string'
+  ? normalizeBase(import.meta.env.VITE_API_BASE_URL)
+  : '';
+const API_BASE_URL = envBase || 'https://api.mysuperhero.xyz';
 
 export function getApiBaseUrl() {
   return API_BASE_URL as string;
