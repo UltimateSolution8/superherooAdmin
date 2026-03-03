@@ -172,7 +172,7 @@ export function DataGrid<T>({
 
       <div
         style={domLayout === 'normal' ? { height: typeof height === 'number' ? `${height}px` : height } : undefined}
-        className="rounded-2xl border border-foreground/10 bg-card/60 overflow-hidden"
+        className="ag-theme-quartz rounded-2xl border border-foreground/10 bg-card/60 overflow-hidden"
       >
         <AgGridReact<T>
           ref={gridRef}
