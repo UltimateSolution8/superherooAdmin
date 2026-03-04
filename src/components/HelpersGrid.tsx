@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import type { ColDef, ICellRendererParams } from 'ag-grid-community';
+import { useMemo, useState } from 'react';
+import type { ColDef, GridApi, ICellRendererParams } from 'ag-grid-community';
 import { DataGrid } from './DataGrid';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/api';
@@ -116,6 +116,37 @@ function ActionRenderer(params: ICellRendererParams<HelperRow>) {
 }
 
 export function HelpersGrid({ helpers }: { helpers: HelperRow[] }) {
+  const { state } = useAuth();
+  const [gridApi, setGridApi] = useState<GridApi<HelperRow> | null>(null);
+
+  const handleBulkUpload = async (file: File | null) => {
+    if (!file) return;
+    const text = await file.text();
+    const rows = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (rows.length < 2) return;
+    const header = rows[0].split(',').map((h) => h.trim().toLowerCase());
+    const idxDisplay = header.indexOf('displayname');
+    const idxEmail = header.indexOf('email');
+    const idxPhone = header.indexOf('phone');
+    const payloads = rows.slice(1).map((line) => line.split(',').map((v) => v.trim()));
+    for (const cols of payloads) {
+      await apiFetch(
+        '/api/v1/admin/helpers',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            displayName: idxDisplay >= 0 ? cols[idxDisplay] : null,
+            email: idxEmail >= 0 ? cols[idxEmail] : null,
+            phone: idxPhone >= 0 ? cols[idxPhone] : null,
+            status: 'ACTIVE',
+          }),
+        },
+        state.accessToken,
+      );
+    }
+    gridApi?.refreshClientSideRowModel('filter');
+  };
+
   const columnDefs = useMemo<ColDef<HelperRow>[]>(
     () => [
       {
@@ -124,6 +155,8 @@ export function HelpersGrid({ helpers }: { helpers: HelperRow[] }) {
         width: 140,
         cellClass: 'font-mono text-xs',
         valueFormatter: (p) => p.value ? `${(p.value as string).substring(0, 8)}…` : '-',
+        checkboxSelection: true,
+        headerCheckboxSelection: true,
       },
       { headerName: 'Display Name', field: 'displayName', flex: 1 },
       { headerName: 'Phone', field: 'phone', width: 140 },
@@ -178,6 +211,18 @@ export function HelpersGrid({ helpers }: { helpers: HelperRow[] }) {
       height={640}
       dateField="createdAt"
       exportFileName="superheroo-helpers.xlsx"
+      onGridReady={(api) => setGridApi(api)}
+      extraContent={(
+        <label className="inline-flex items-center gap-2 rounded-lg border border-foreground/15 bg-foreground/5 px-3 py-2 text-xs font-semibold cursor-pointer">
+          Bulk Upload CSV
+          <input
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={(e) => handleBulkUpload(e.target.files?.[0] || null)}
+          />
+        </label>
+      )}
     />
   );
 }

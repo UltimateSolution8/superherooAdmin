@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import type { ColDef, ICellRendererParams } from 'ag-grid-community';
+import { useMemo, useState } from 'react';
+import type { ColDef, GridApi, ICellRendererParams } from 'ag-grid-community';
 import { DataGrid } from './DataGrid';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/api';
@@ -76,6 +76,36 @@ function ActionRenderer(params: ICellRendererParams<PendingHelperRow>) {
 }
 
 export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] }) {
+  const { state } = useAuth();
+  const [gridApi, setGridApi] = useState<GridApi<PendingHelperRow> | null>(null);
+
+  const bulkApprove = async () => {
+    if (!gridApi) return;
+    const rows = gridApi.getSelectedRows();
+    if (!rows.length) return;
+    if (!confirm(`Approve ${rows.length} helpers?`)) return;
+    await Promise.all(rows.map((row) => apiFetch<void>(`/api/v1/admin/helpers/${row.helperId}/approve`, { method: 'POST' }, state.accessToken)));
+    gridApi.applyTransaction({ remove: rows });
+  };
+
+  const bulkReject = async () => {
+    if (!gridApi) return;
+    const rows = gridApi.getSelectedRows();
+    if (!rows.length) return;
+    const reason = prompt('Rejection reason?') || 'Incomplete KYC';
+    if (!confirm(`Reject ${rows.length} helpers?`)) return;
+    await Promise.all(
+      rows.map((row) =>
+        apiFetch<void>(
+          `/api/v1/admin/helpers/${row.helperId}/reject`,
+          { method: 'POST', body: JSON.stringify({ reason }) },
+          state.accessToken,
+        ),
+      ),
+    );
+    gridApi.applyTransaction({ remove: rows });
+  };
+
   const columnDefs = useMemo<ColDef<PendingHelperRow>[]>(
     () => [
       {
@@ -84,6 +114,8 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
         width: 140,
         cellClass: 'font-mono text-xs',
         valueFormatter: (p) => p.value ? `${(p.value as string).substring(0, 8)}…` : '-',
+        checkboxSelection: true,
+        headerCheckboxSelection: true,
       },
       { headerName: 'Name', field: 'displayName', flex: 1 },
       { headerName: 'Phone', field: 'phone', width: 140 },
@@ -126,6 +158,23 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
       height={640}
       dateField="kycSubmittedAt"
       exportFileName="superheroo-pending-kyc.xlsx"
+      onGridReady={(api) => setGridApi(api)}
+      extraContent={(
+        <div className="flex items-center gap-2">
+          <button
+            onClick={bulkApprove}
+            className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500"
+          >
+            Bulk Approve
+          </button>
+          <button
+            onClick={bulkReject}
+            className="rounded-lg border border-red-400/30 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-950/30"
+          >
+            Bulk Reject
+          </button>
+        </div>
+      )}
     />
   );
 }
