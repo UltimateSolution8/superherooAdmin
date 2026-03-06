@@ -9,19 +9,19 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 const customTheme = themeQuartz.withParams({
   accentColor: '#6366f1',
-  backgroundColor: 'var(--background)',
+  backgroundColor: '#0b0f14',
   foregroundColor: 'var(--foreground)',
   borderColor: 'rgba(128,128,128,0.15)',
-  headerBackgroundColor: 'rgba(128,128,128,0.06)',
+  headerBackgroundColor: '#0f1419',
   headerFontSize: 13,
   fontSize: 13,
   rowBorder: { color: 'rgba(128,128,128,0.1)' },
   headerFontWeight: 600,
   borderRadius: 12,
   wrapperBorderRadius: 12,
-  spacing: 6,
-  rowHeight: 44,
-  headerHeight: 46,
+  spacing: 8,
+  rowHeight: 56,
+  headerHeight: 52,
 });
 
 type Props<T> = {
