@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import type { ColDef, GridReadyEvent, GridApi } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from 'ag-grid-community';
@@ -7,22 +7,21 @@ import { saveAs } from 'file-saver';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-// Dark theme
-const darkTheme = themeQuartz.withParams({
+const customTheme = themeQuartz.withParams({
   accentColor: '#6366f1',
-  backgroundColor: '#0b0f14',
-  foregroundColor: '#f4f4f5',
-  borderColor: 'rgba(148, 163, 184, 0.12)',
-  headerBackgroundColor: '#0f1419',
+  backgroundColor: 'var(--background)',
+  foregroundColor: 'var(--foreground)',
+  borderColor: 'rgba(128,128,128,0.15)',
+  headerBackgroundColor: 'rgba(128,128,128,0.06)',
   headerFontSize: 13,
   fontSize: 13,
-  rowBorder: { color: 'rgba(148, 163, 184, 0.08)' },
+  rowBorder: { color: 'rgba(128,128,128,0.1)' },
   headerFontWeight: 600,
   borderRadius: 12,
   wrapperBorderRadius: 12,
-  spacing: 10,
-  rowHeight: 64,
-  headerHeight: 52,
+  spacing: 6,
+  rowHeight: 44,
+  headerHeight: 46,
 });
 
 type Props<T> = {
@@ -173,11 +172,11 @@ export function DataGrid<T>({
 
       <div
         style={domLayout === 'normal' ? { height: typeof height === 'number' ? `${height}px` : height } : undefined}
-        className="ag-theme-quartz-dark rounded-2xl border border-foreground/10 overflow-hidden"
+        className="ag-theme-quartz rounded-2xl border border-foreground/10 bg-card/60 overflow-hidden"
       >
         <AgGridReact<T>
           ref={gridRef}
-          theme={darkTheme}
+          theme={customTheme}
           rowData={filteredRowData}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}

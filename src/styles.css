@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-@import "ag-grid-community/styles/ag-grid.css";
-@import "ag-grid-community/styles/ag-theme-quartz.css";
-
 :root {
   --background: #0b0f14;
   --foreground: #f4f4f5;
@@ -33,142 +30,53 @@ body {
   box-sizing: border-box;
 }
 
-/* AG Grid dark theme */
-.ag-theme-quartz,
-.ag-theme-quartz-dark,
-.ag-theme-quartz-dark.ag-theme-quartz {
-  --ag-background-color: #0b0f14 !important;
-  --ag-foreground-color: #f4f4f5 !important;
-  --ag-border-color: rgba(148, 163, 184, 0.12) !important;
-  --ag-header-background-color: #0f1419 !important;
-  --ag-odd-row-background-color: #0b0f14 !important;
-  --ag-row-hover-color: rgba(99, 102, 241, 0.08) !important;
-  --ag-selected-row-background-color: rgba(99, 102, 241, 0.14) !important;
-  --ag-header-foreground-color: #f4f4f5 !important;
-  --ag-input-focus-border-color: #6366f1 !important;
-  --ag-range-selection-border-color: #6366f1 !important;
-  --ag-row-height: 64px !important;
+.ag-theme-quartz {
+  --ag-background-color: rgba(10, 14, 20, 0.95);
+  --ag-foreground-color: var(--foreground);
+  --ag-border-color: rgba(148, 163, 184, 0.12);
+  --ag-header-background-color: rgba(15, 23, 42, 0.8);
+  --ag-odd-row-background-color: rgba(255, 255, 255, 0.015);
+  --ag-row-hover-color: rgba(99, 102, 241, 0.08);
+  --ag-selected-row-background-color: rgba(99, 102, 241, 0.14);
+  --ag-input-border-color: rgba(148, 163, 184, 0.25);
+  --ag-input-disabled-border-color: rgba(148, 163, 184, 0.1);
+  --ag-header-foreground-color: var(--foreground);
   --ag-font-size: 13px;
 }
 
-.ag-theme-quartz .ag-root-wrapper,
-.ag-theme-quartz-dark .ag-root-wrapper,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-root-wrapper {
-  background: #0b0f14 !important;
+.ag-theme-quartz .ag-root-wrapper {
+  background: rgba(10, 14, 20, 0.9);
   border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
 }
 
-.ag-theme-quartz .ag-header,
-.ag-theme-quartz-dark .ag-header,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-header {
+.ag-theme-quartz .ag-header {
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
-  height: 52px;
-  background: #0f1419 !important;
 }
 
-.ag-theme-quartz .ag-header-cell-text,
-.ag-theme-quartz-dark .ag-header-cell-text,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-header-cell-text {
-  color: #f4f4f5 !important;
+.ag-theme-quartz .ag-row {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.ag-theme-quartz .ag-row-alt {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.ag-theme-quartz .ag-cell {
+  border-color: rgba(148, 163, 184, 0.06);
+}
+
+.ag-theme-quartz .ag-header-cell-text {
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
   font-size: 11px;
 }
 
-.ag-theme-quartz .ag-row,
-.ag-theme-quartz-dark .ag-row,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-row {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
-  margin-bottom: 6px;
-  background-color: #0d1117 !important;
+.ag-theme-quartz .ag-row {
   border-radius: 8px;
-  min-height: 64px;
-  color: #f4f4f5 !important;
 }
 
-.ag-theme-quartz .ag-row-alt,
-.ag-theme-quartz-dark .ag-row-alt,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-row-alt {
-  background-color: #0b0f14 !important;
-}
-
-.ag-theme-quartz .ag-cell,
-.ag-theme-quartz-dark .ag-cell,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-cell {
-  border-color: rgba(148, 163, 184, 0.06);
-  color: #f4f4f5 !important;
-  display: flex;
-  align-items: center;
-  padding-top: 18px;
-  padding-bottom: 18px;
-}
-
-/* Empty grid area */
-.ag-theme-quartz .ag-body-viewport,
-.ag-theme-quartz-dark .ag-body-viewport,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-body-viewport {
-  background: #0b0f14 !important;
-}
-
-.ag-theme-quartz .ag-center-cols-viewport,
-.ag-theme-quartz-dark .ag-center-cols-viewport,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-center-cols-viewport {
-  background: #0b0f14 !important;
-}
-
-.ag-theme-quartz .ag-empty,
-.ag-theme-quartz .ag-overlay-no-rows-wrapper,
-.ag-theme-quartz-dark .ag-overlay-no-rows-wrapper,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-overlay-no-rows-wrapper {
-  background: #0b0f14 !important;
-  color: #f4f4f5 !important;
-}
-
-/* Pagination */
-.ag-theme-quartz .ag-paging-panel,
-.ag-theme-quartz-dark .ag-paging-panel,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-paging-panel {
-  background: #0f1419 !important;
-  color: #f4f4f5 !important;
-  border-top: 1px solid rgba(148, 163, 184, 0.12) !important;
-}
-
-.ag-theme-quartz .ag-paging-button,
-.ag-theme-quartz-dark .ag-paging-button,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-paging-button {
-  color: #f4f4f5 !important;
-}
-
-.ag-theme-quartz .ag-paging-button:hover,
-.ag-theme-quartz-dark .ag-paging-button:hover,
-.ag-theme-quartz-dark.ag-theme-quartz .ag-paging-button:hover {
-  background: rgba(99, 102, 241, 0.2) !important;
-}
-
-/* Inputs */
-.ag-theme-quartz input,
-.ag-theme-quartz-dark input,
-.ag-theme-quartz select,
-.ag-theme-quartz-dark select,
-.ag-theme-quartz .ag-floating-filter-input,
-.ag-theme-quartz-dark .ag-floating-filter-input {
-  background: #1a1f26 !important;
-  color: #f4f4f5 !important;
-  border-color: rgba(148, 163, 184, 0.25) !important;
-}
-
-/* Date input calendar icon */
-.ag-theme-quartz input[type="date"]::-webkit-calendar-picker-indicator,
-.ag-theme-quartz-dark input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) !important;
-  opacity: 0.6;
-}
-
-/* Buttons */
-.ag-theme-quartz button,
-.ag-theme-quartz-dark button,
-.ag-theme-quartz-dark.ag-theme-quartz button {
-  color: #f4f4f5 !important;
+.ag-theme-quartz .ag-row .ag-cell {
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
