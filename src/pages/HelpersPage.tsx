@@ -61,7 +61,7 @@ export default function HelpersPage() {
         ) : null}
 
         <section className="rounded-2xl border border-foreground/10 p-5">
-          <h2 className="text-sm font-semibold mb-4">Add Helper</h2>
+          <h2 className="text-sm font-semibold mb-4">Add Superhero</h2>
           <form onSubmit={handleCreate} className="grid gap-3 sm:grid-cols-5">
             <input
               name="phone"

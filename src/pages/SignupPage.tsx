@@ -37,10 +37,10 @@ export default function SignupPage() {
       state.accessToken,
     );
     if (!res.ok) {
-      setMessage(`Buyer signup failed: ${res.errorText}`);
+      setMessage(`Task Giver signup failed: ${res.errorText}`);
       return;
     }
-    setMessage('Buyer account created successfully.');
+    setMessage('Task Giver account created successfully.');
     setBuyer({ email: '', password: '', phone: '', displayName: '' });
   };
 
@@ -48,7 +48,7 @@ export default function SignupPage() {
     e.preventDefault();
     setMessage(null);
     if (!idFront || !idBack || !selfie) {
-      setMessage('Helper KYC images are required.');
+      setMessage('Superhero KYC images are required.');
       return;
     }
     const body = new FormData();
@@ -73,10 +73,10 @@ export default function SignupPage() {
     );
 
     if (!res.ok) {
-      setMessage(`Helper signup failed: ${res.errorText}`);
+      setMessage(`Superhero signup failed: ${res.errorText}`);
       return;
     }
-    setMessage('Helper account created and KYC submitted.');
+    setMessage('Superhero account created and KYC submitted.');
     setHelper({ email: '', password: '', phone: '', displayName: '', fullName: '', idNumber: '' });
     setIdFront(null);
     setIdBack(null);
@@ -90,9 +90,9 @@ export default function SignupPage() {
         <header className="flex items-center gap-3">
           <img src="/superlogo.png" alt="Superheroo" className="h-12 w-12 rounded-xl object-cover" />
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Create buyer or helper</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Create Task Giver or Superhero</h1>
             <p className="text-sm text-foreground/70">
-              Use these forms to create demo accounts. Helpers will be created with KYC pending review.
+              Use these forms to create demo accounts. Superheroes will be created with KYC pending review.
             </p>
           </div>
         </header>
@@ -105,8 +105,8 @@ export default function SignupPage() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <form onSubmit={createBuyer} className="rounded-2xl border border-foreground/10 bg-background/80 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold">Buyer signup</h2>
-            <p className="text-sm text-foreground/60">Creates a buyer account with email + password.</p>
+            <h2 className="text-lg font-semibold">Task Giver signup</h2>
+            <p className="text-sm text-foreground/60">Creates a task giver account with email + password.</p>
             <div className="mt-4 space-y-3">
               <label className="block text-sm font-medium">
                 Email
@@ -151,14 +151,14 @@ export default function SignupPage() {
                 />
               </label>
               <button className="w-full rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90">
-                Create buyer
+                Create Task Giver
               </button>
             </div>
           </form>
 
           <form onSubmit={createHelper} className="rounded-2xl border border-foreground/10 bg-background/80 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold">Helper signup + KYC</h2>
-            <p className="text-sm text-foreground/60">Creates a helper account and uploads KYC documents.</p>
+            <h2 className="text-lg font-semibold">Superhero signup + KYC</h2>
+            <p className="text-sm text-foreground/60">Creates a superhero account and uploads KYC documents.</p>
             <div className="mt-4 space-y-3">
               <label className="block text-sm font-medium">
                 Email
@@ -253,7 +253,7 @@ export default function SignupPage() {
                 />
               </label>
               <button className="w-full rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90">
-                Create helper + upload KYC
+                Create Superhero + upload KYC
               </button>
             </div>
           </form>

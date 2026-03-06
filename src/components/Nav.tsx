@@ -3,9 +3,9 @@ import { useAuth } from '../lib/auth';
 
 const navItems = [
   { label: 'Dashboard', href: '/', icon: '📊' },
-  { label: 'Helpers', href: '/helpers', icon: '👥' },
+  { label: 'Superheroes', href: '/helpers', icon: '🦸' },
   { label: 'Pending', href: '/helpers/pending', icon: '⏳' },
-  { label: 'Buyers', href: '/buyers', icon: '🛒' },
+  { label: 'Task Givers', href: '/buyers', icon: '📝' },
   { label: 'Tasks', href: '/tasks', icon: '📋' },
   { label: 'Support', href: '/support/tickets', icon: '💬' },
   { label: 'Create User', href: '/signup', icon: '➕' },

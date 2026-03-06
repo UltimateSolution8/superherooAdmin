@@ -120,11 +120,11 @@ export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
     <DataGrid<BuyerRow>
       rowData={buyers}
       columnDefs={columnDefs}
-      title="Buyers"
-      subtitle="Manage buyer accounts and contact details."
+      title="Task Givers"
+      subtitle="Manage task giver accounts and contact details."
       height={640}
       dateField="createdAt"
-      exportFileName="superheroo-buyers.xlsx"
+      exportFileName="superheroo-task-givers.xlsx"
     />
   );
 }
