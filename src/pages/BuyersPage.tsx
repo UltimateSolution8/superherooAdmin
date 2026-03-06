@@ -62,7 +62,7 @@ export default function BuyersPage() {
         ) : null}
 
         <section className="rounded-2xl border border-foreground/10 p-5">
-          <h2 className="text-sm font-semibold mb-4">Add Buyer</h2>
+          <h2 className="text-sm font-semibold mb-4">Add Task Giver</h2>
           <form onSubmit={handleCreate} className="grid gap-3 sm:grid-cols-5">
             <input
               name="phone"
@@ -105,7 +105,7 @@ export default function BuyersPage() {
               disabled={creating}
               className="sm:col-span-5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-60"
             >
-              {creating ? 'Creating…' : 'Create Buyer'}
+              {creating ? 'Creating…' : 'Create Task Giver'}
             </button>
           </form>
         </section>

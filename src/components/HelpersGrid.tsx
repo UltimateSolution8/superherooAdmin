@@ -206,8 +206,8 @@ export function HelpersGrid({ helpers }: { helpers: HelperRow[] }) {
     <DataGrid<HelperRow>
       rowData={helpers}
       columnDefs={columnDefs}
-      title="All Helpers"
-      subtitle="Manage helper accounts, contact details, and KYC status."
+      title="Superheroes"
+      subtitle="Manage superhero accounts, contact details, and KYC status."
       height={640}
       dateField="createdAt"
       exportFileName="superheroo-helpers.xlsx"

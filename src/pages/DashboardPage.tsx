@@ -63,7 +63,7 @@ export default function DashboardPage() {
         )}
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          <StatCard title="Pending Helpers" value={String(pendingCount)} icon="👤" color="amber" href="/helpers/pending" />
+          <StatCard title="Pending Superheroes" value={String(pendingCount)} icon="🦸" color="amber" href="/helpers/pending" />
           <StatCard title="Active Tasks" value={String(searching + assigned + arrived + started)} icon="⚡" color="indigo" href="/tasks" />
           <StatCard title="Completed Tasks" value={String(completed)} icon="✅" color="emerald" href="/tasks" />
           <StatCard title="Total Revenue" value={`₹${(totalRevenue / 100).toLocaleString()}`} icon="💰" color="purple" />
@@ -112,11 +112,11 @@ export default function DashboardPage() {
           <section className="rounded-2xl border border-foreground/10 p-6">
             <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
             <div className="grid grid-cols-2 gap-3">
-              <ActionCard title="Review Helpers" description="Approve pending KYC" href="/helpers/pending" icon="🔍" />
+              <ActionCard title="Review Superheroes" description="Approve pending KYC" href="/helpers/pending" icon="🔍" />
               <ActionCard title="Manage Tasks" description="View all tasks" href="/tasks" icon="📋" />
-              <ActionCard title="All Helpers" description="Manage accounts" href="/helpers" icon="👥" />
+              <ActionCard title="All Superheroes" description="Manage accounts" href="/helpers" icon="🦸" />
               <ActionCard title="Support Tickets" description="Handle inquiries" href="/support/tickets" icon="💬" />
-              <ActionCard title="Buyers" description="Manage buyer accounts" href="/buyers" icon="🛒" />
+              <ActionCard title="Task Givers" description="Manage task giver accounts" href="/buyers" icon="📝" />
               <ActionCard title="Create User" description="Add new user" href="/signup" icon="➕" />
             </div>
           </section>

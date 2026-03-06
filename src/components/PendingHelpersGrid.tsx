@@ -109,7 +109,7 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
   const columnDefs = useMemo<ColDef<PendingHelperRow>[]>(
     () => [
       {
-        headerName: 'Helper ID',
+        headerName: 'Superhero ID',
         field: 'helperId',
         width: 140,
         cellClass: 'font-mono text-xs',
@@ -142,7 +142,7 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
         cellRenderer: ActionRenderer,
         filter: false,
         sortable: false,
-        width: 140,
+        width: 160,
         pinned: 'right',
       },
     ],
@@ -154,7 +154,7 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
       rowData={helpers}
       columnDefs={columnDefs}
       title="Pending KYC"
-      subtitle="Review helper documents and approve/reject KYC."
+      subtitle="Review superhero documents and approve/reject KYC."
       height={640}
       dateField="kycSubmittedAt"
       exportFileName="superheroo-pending-kyc.xlsx"

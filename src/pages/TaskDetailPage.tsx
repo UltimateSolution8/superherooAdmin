@@ -110,8 +110,8 @@ export default function TaskDetailPage() {
           <div className="text-sm text-foreground/80">{task.description}</div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-foreground/70">
             <span className="rounded-full border border-foreground/15 px-2 py-0.5">{task.status}</span>
-            <span className="rounded-full border border-foreground/15 px-2 py-0.5">Buyer: {task.buyerName || task.buyerPhone || task.buyerId}</span>
-            <span className="rounded-full border border-foreground/15 px-2 py-0.5">Helper: {task.helperName || task.helperPhone || task.assignedHelperId || '-'}</span>
+            <span className="rounded-full border border-foreground/15 px-2 py-0.5">Task Giver: {task.buyerName || task.buyerPhone || task.buyerId}</span>
+            <span className="rounded-full border border-foreground/15 px-2 py-0.5">Superhero: {task.helperName || task.helperPhone || task.assignedHelperId || '-'}</span>
             <span className="rounded-full border border-foreground/15 px-2 py-0.5">{task.urgency}</span>
             <span className="rounded-full border border-foreground/15 px-2 py-0.5">{task.timeMinutes} min</span>
             <span className="rounded-full border border-foreground/15 px-2 py-0.5">INR {(task.budgetPaise / 100).toFixed(0)}</span>

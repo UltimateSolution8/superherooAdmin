@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import type { ColDef, GridReadyEvent, GridApi } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from 'ag-grid-community';
@@ -7,20 +7,39 @@ import { saveAs } from 'file-saver';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-const customTheme = themeQuartz.withParams({
+// Default light theme
+const lightTheme = themeQuartz.withParams({
   accentColor: '#6366f1',
-  backgroundColor: '#0b0f14',
-  foregroundColor: 'var(--foreground)',
-  borderColor: 'rgba(128,128,128,0.15)',
-  headerBackgroundColor: '#0f1419',
+  backgroundColor: '#ffffff',
+  foregroundColor: '#171717',
+  borderColor: 'rgba(0,0,0,0.08)',
+  headerBackgroundColor: '#fafafa',
   headerFontSize: 13,
   fontSize: 13,
-  rowBorder: { color: 'rgba(128,128,128,0.1)' },
+  rowBorder: { color: 'rgba(0,0,0,0.04)' },
   headerFontWeight: 600,
   borderRadius: 12,
   wrapperBorderRadius: 12,
-  spacing: 8,
-  rowHeight: 56,
+  spacing: 10,
+  rowHeight: 48,
+  headerHeight: 44,
+});
+
+// Dark theme for system dark mode
+const darkTheme = themeQuartz.withParams({
+  accentColor: '#6366f1',
+  backgroundColor: '#0b0f14',
+  foregroundColor: '#f4f4f5',
+  borderColor: 'rgba(148, 163, 184, 0.12)',
+  headerBackgroundColor: '#0f1419',
+  headerFontSize: 13,
+  fontSize: 13,
+  rowBorder: { color: 'rgba(148, 163, 184, 0.08)' },
+  headerFontWeight: 600,
+  borderRadius: 12,
+  wrapperBorderRadius: 12,
+  spacing: 10,
+  rowHeight: 64,
   headerHeight: 52,
 });
 
@@ -60,6 +79,22 @@ export function DataGrid<T>({
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [gridApi, setGridApi] = useState<GridApi<T> | null>(null);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  // Always use dark theme for consistent dark mode appearance
+  const theme = darkTheme;
 
   const defaultColDef = useMemo<ColDef>(
     () => ({
@@ -176,7 +211,7 @@ export function DataGrid<T>({
       >
         <AgGridReact<T>
           ref={gridRef}
-          theme={customTheme}
+          theme={theme}
           rowData={filteredRowData}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
