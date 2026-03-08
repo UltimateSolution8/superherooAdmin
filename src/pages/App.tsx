@@ -1,25 +1,112 @@
-import React, { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { LoginPage } from './LoginPage';
-import { DashboardPage } from './DashboardPage';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider, useAuth } from '../lib/auth';
+import LoginPage from './LoginPage';
+import DashboardPage from './DashboardPage';
+import HelpersPage from './HelpersPage';
+import PendingHelpersPage from './PendingHelpersPage';
+import BuyersPage from './BuyersPage';
+import TasksPage from './TasksPage';
+import TaskDetailPage from './TaskDetailPage';
+import SupportTicketsPage from './SupportTicketsPage';
+import SupportTicketDetailPage from './SupportTicketDetailPage';
+import SignupPage from './SignupPage';
+import VideoKycPage from './VideoKycPage';
 
-export function App() {
-  const [token, setToken] = useState<string | null>(
-    () => localStorage.getItem('adminToken')
-  );
+function Protected({ children }: { children: React.ReactNode }) {
+  const { state } = useAuth();
+  if (!state.accessToken) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
 
-  const handleLogin = (nextToken: string) => {
-    localStorage.setItem('adminToken', nextToken);
-    setToken(nextToken);
-  };
-
+export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-      <Route
-        path="/"
-        element={token ? <DashboardPage token={token} /> : <Navigate to="/login" replace />}
-      />
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/"
+          element={
+            <Protected>
+              <DashboardPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/helpers"
+          element={
+            <Protected>
+              <HelpersPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/helpers/pending"
+          element={
+            <Protected>
+              <PendingHelpersPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/buyers"
+          element={
+            <Protected>
+              <BuyersPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <Protected>
+              <TasksPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/tasks/:taskId"
+          element={
+            <Protected>
+              <TaskDetailPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/support/tickets"
+          element={
+            <Protected>
+              <SupportTicketsPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/support/tickets/:ticketId"
+          element={
+            <Protected>
+              <SupportTicketDetailPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/kyc/video"
+          element={
+            <Protected>
+              <VideoKycPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <Protected>
+              <SignupPage />
+            </Protected>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AuthProvider>
   );
 }
