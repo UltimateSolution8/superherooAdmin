@@ -1,4 +1,5 @@
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://159.89.167.248:8081';
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_BASE_URL || 'https://api.mysuperhero.xyz';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
