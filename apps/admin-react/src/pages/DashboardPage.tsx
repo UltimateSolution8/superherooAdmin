@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getSummary } from '../api/client';
+import { VideoKycPanel } from '../components/VideoKycPanel';
 
 export function DashboardPage({ token }: { token: string }) {
   const [data, setData] = useState<any>(null);
@@ -16,13 +17,14 @@ export function DashboardPage({ token }: { token: string }) {
   }, [token]);
 
   return (
-    <div className="page">
-      <div className="card">
+    <div className="page stacked">
+      <div className="card wide">
         <h1>Dashboard</h1>
         <p className="muted">Fast summary endpoint.</p>
         {error ? <div className="error">{error}</div> : null}
         <pre>{data ? JSON.stringify(data, null, 2) : 'Loading...'}</pre>
       </div>
+      <VideoKycPanel token={token} />
     </div>
   );
 }
