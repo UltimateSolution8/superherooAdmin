@@ -17,7 +17,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export async function login(email: string, password: string) {
-  return request<{ accessToken: string }>(`/api/v1/admin/login`, {
+  return request<{ accessToken: string }>(`/api/v1/auth/password/login`, {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
