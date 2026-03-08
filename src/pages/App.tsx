@@ -10,6 +10,7 @@ import TaskDetailPage from './TaskDetailPage';
 import SupportTicketsPage from './SupportTicketsPage';
 import SupportTicketDetailPage from './SupportTicketDetailPage';
 import SignupPage from './SignupPage';
+import VideoKycPage from './VideoKycPage';
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { state } = useAuth();
@@ -85,6 +86,14 @@ export default function App() {
           element={
             <Protected>
               <SupportTicketDetailPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/kyc/video"
+          element={
+            <Protected>
+              <VideoKycPage />
             </Protected>
           }
         />
