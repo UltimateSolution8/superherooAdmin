@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { login } from '../api/client';
 
 export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -14,6 +16,7 @@ export function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
     try {
       const res = await login(email, password);
       onLogin(res.accessToken);
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
