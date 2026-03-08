@@ -1,40 +1,17 @@
 # Superheroo Admin (React)
 
-React + Vite admin console for Superheroo.
+Minimal React/Vite admin shell to replace Next.js for faster internal use.
 
-## Requirements
-- Node 20+
+## Env
+- `VITE_API_BASE_URL` (default: http://159.89.167.248:8081)
 
-## Setup
-
-```bash
-npm install
+## Run
 ```
-
-## Run (Dev)
-
-```bash
+npm install
 npm run dev
 ```
 
-Open http://localhost:5174
-
-## Build
-
-```bash
-npm run build
-npm run preview
-```
-
-## Environment
-
-Create `.env` with:
-
-```
-VITE_API_BASE_URL=https://api.mysuperhero.xyz
-VITE_DEV_SHOW_OTP=true
-```
-
-## Deployment
-
-Static build output is in `dist/`. Use the Dockerfile or host the static files.
+## Next steps
+- Port screens from Next app (helpers, tasks, support)
+- Add auth persistence
+- Add data tables + filters
