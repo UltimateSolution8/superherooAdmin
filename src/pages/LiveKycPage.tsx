@@ -62,6 +62,11 @@ export default function LiveKycPage() {
 
   useEffect(() => {
     if (!session || !containerRef.current) return;
+    if (!session.token) {
+      console.error('Zego: No token available in session');
+      setSessionError('No video token');
+      return;
+    }
     const zp = ZegoUIKitPrebuilt.create(session.token);
     zegoRef.current = zp;
     zp.joinRoom({
@@ -73,7 +78,7 @@ export default function LiveKycPage() {
     });
     return () => {
       try {
-        zp.destroy();
+        if (zegoRef.current) zp.destroy();
       } catch {
         // ignore
       }
