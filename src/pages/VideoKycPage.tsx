@@ -14,6 +14,9 @@ type VideoKycRow = {
   videoUrl: string | null;
   docFrontUrl: string | null;
   docBackUrl: string | null;
+  selfieUrl?: string | null;
+  liveRoomId?: string | null;
+  liveRecordingUrl?: string | null;
   recommendation: string | null;
   faceMatchScore: number | null;
   livenessScore: number | null;
@@ -91,6 +94,15 @@ export default function VideoKycPage() {
       {
         headerName: 'Video',
         field: 'videoUrl',
+        width: 120,
+        cellRenderer: (p: ICellRendererParams<VideoKycRow>) =>
+          (p.data?.liveRecordingUrl || p.value)
+            ? <a className="text-indigo-400 underline" href={String(p.data?.liveRecordingUrl || p.value)} target="_blank">View</a>
+            : '-',
+      },
+      {
+        headerName: 'Selfie',
+        field: 'selfieUrl',
         width: 120,
         cellRenderer: (p: ICellRendererParams<VideoKycRow>) =>
           p.value ? <a className="text-indigo-400 underline" href={String(p.value)} target="_blank">View</a> : '-',
