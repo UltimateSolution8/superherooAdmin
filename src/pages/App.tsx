@@ -11,6 +11,8 @@ import SupportTicketsPage from './SupportTicketsPage';
 import SupportTicketDetailPage from './SupportTicketDetailPage';
 import SignupPage from './SignupPage';
 import VideoKycPage from './VideoKycPage';
+import LiveKycPage from './LiveKycPage';
+import LiveKycJoinPage from './LiveKycJoinPage';
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { state } = useAuth();
@@ -97,6 +99,15 @@ export default function App() {
             </Protected>
           }
         />
+        <Route
+          path="/kyc/live"
+          element={
+            <Protected>
+              <LiveKycPage />
+            </Protected>
+          }
+        />
+        <Route path="/kyc/live/join" element={<LiveKycJoinPage />} />
         <Route
           path="/signup"
           element={

@@ -6,6 +6,7 @@ const navItems = [
   { label: 'Helpers', href: '/helpers', icon: '👥' },
   { label: 'Pending', href: '/helpers/pending', icon: '⏳' },
   { label: 'Video KYC', href: '/kyc/video', icon: '🎥' },
+  { label: 'Live KYC', href: '/kyc/live', icon: '📹' },
   { label: 'Buyers', href: '/buyers', icon: '🛒' },
   { label: 'Tasks', href: '/tasks', icon: '📋' },
   { label: 'Support', href: '/support/tickets', icon: '💬' },
