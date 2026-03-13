@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 import type { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { DataGrid } from '../components/DataGrid';
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
+import { buildKitToken, createZego } from '../lib/zego';
 
 type PendingHelperRow = {
   helperId: string;
@@ -20,7 +21,10 @@ type LiveKycSessionResponse = {
   id: string;
   helperId: string;
   helperName: string | null;
+  appId: number;
   roomId: string;
+  userId: string;
+  userName: string;
   token: string;
   status: string;
   expiresAt: string;
@@ -62,20 +66,34 @@ export default function LiveKycPage() {
 
   useEffect(() => {
     if (!session || !containerRef.current) return;
-    if (!session.token) {
-      console.error('Zego: No token available in session');
+    if (!session.token || !session.appId || !session.roomId || !session.userId) {
+      console.error('Zego: Missing live session token fields');
       setSessionError('No video token');
       return;
     }
-    const zp = ZegoUIKitPrebuilt.create(session.token);
-    zegoRef.current = zp;
-    zp.joinRoom({
-      container: containerRef.current,
-      scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
-      showPreJoinView: false,
-      turnOnCameraWhenJoining: true,
-      showRoomTimer: true,
-    });
+    let zp: any = null;
+    try {
+      const kitToken = buildKitToken({
+        appId: Number(session.appId),
+        roomId: session.roomId,
+        token: session.token,
+        userId: session.userId,
+        userName: session.userName || 'Admin',
+      });
+      zp = createZego(kitToken);
+      zegoRef.current = zp;
+      zp.joinRoom({
+        container: containerRef.current,
+        scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
+        showPreJoinView: false,
+        turnOnCameraWhenJoining: true,
+        showRoomTimer: true,
+      });
+    } catch (e) {
+      console.error('Zego init failed', e);
+      setSessionError('Could not start live KYC call. Please retry.');
+      return;
+    }
     return () => {
       try {
         if (zegoRef.current) zp.destroy();
