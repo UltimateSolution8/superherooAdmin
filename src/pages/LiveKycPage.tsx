@@ -43,6 +43,7 @@ export default function LiveKycPage() {
   const [session, setSession] = useState<LiveKycSessionResponse | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessionBusy, setSessionBusy] = useState(false);
+  const [approveBusy, setApproveBusy] = useState(false);
   const [snapshots, setSnapshots] = useState<Record<string, string>>({});
   const containerRef = useRef<HTMLDivElement | null>(null);
   const zegoRef = useRef<any>(null);
@@ -133,6 +134,35 @@ export default function LiveKycPage() {
     setSession(null);
     setSnapshots({});
   }, [session, state.accessToken]);
+
+  const canApprove = Boolean(session && snapshots.selfie && snapshots['doc-front'] && snapshots['doc-back']);
+
+  const approveFromLive = useCallback(async () => {
+    if (!session || !canApprove) return;
+    setApproveBusy(true);
+    setSessionError(null);
+    try {
+      const res = await apiFetch<void>(
+        `/api/v1/admin/video-kyc/${session.id}/action`,
+        { method: 'POST', body: JSON.stringify({ action: 'APPROVE', remarks: 'Approved via live KYC session' }) },
+        state.accessToken,
+      );
+      if (!res.ok) {
+        setSessionError(res.errorText || 'approve_failed');
+        return;
+      }
+      await apiFetch<void>(
+        `/api/v1/admin/video-kyc/live/${session.id}/end`,
+        { method: 'POST' },
+        state.accessToken,
+      );
+      setHelpers((prev) => prev.filter((h) => h.helperId !== session.helperId));
+      setSession(null);
+      setSnapshots({});
+    } finally {
+      setApproveBusy(false);
+    }
+  }, [canApprove, session, state.accessToken]);
 
   const captureSnapshot = useCallback(async (kind: 'selfie' | 'doc-front' | 'doc-back') => {
     if (!session) return;
@@ -274,6 +304,13 @@ export default function LiveKycPage() {
                 className="rounded-lg border border-foreground/15 px-3 py-1 text-xs font-semibold"
               >
                 End Session
+              </button>
+              <button
+                onClick={approveFromLive}
+                disabled={!canApprove || approveBusy}
+                className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                {approveBusy ? 'Approving…' : 'Approve KYC'}
               </button>
             </div>
           </div>
