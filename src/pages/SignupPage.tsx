@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { Nav } from '../components/Nav';
 import { apiFetch } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import {
+  normalizeEmailOrNull,
+  normalizeIndianPhoneOrNull,
+  validateEmailOrNull,
+  validateIndianPhoneOrNull,
+} from '../lib/validation';
 
 export default function SignupPage() {
   const { state } = useAuth();
@@ -22,14 +28,24 @@ export default function SignupPage() {
   const createBuyer = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
+    const email = normalizeEmailOrNull(buyer.email);
+    const phone = normalizeIndianPhoneOrNull(buyer.phone);
+    if (!email || !validateEmailOrNull(email)) {
+      setMessage('Enter a valid email address.');
+      return;
+    }
+    if (!validateIndianPhoneOrNull(phone)) {
+      setMessage('Enter a valid Indian mobile number.');
+      return;
+    }
     const res = await apiFetch(
       '/api/v1/auth/password/signup',
       {
         method: 'POST',
         body: JSON.stringify({
-          email: buyer.email,
+          email,
           password: buyer.password,
-          phone: buyer.phone || null,
+          phone,
           displayName: buyer.displayName || null,
           role: 'BUYER',
         }),
@@ -47,14 +63,24 @@ export default function SignupPage() {
   const createHelper = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
+    const email = normalizeEmailOrNull(helper.email);
+    const phone = normalizeIndianPhoneOrNull(helper.phone);
+    if (!email || !validateEmailOrNull(email)) {
+      setMessage('Enter a valid email address.');
+      return;
+    }
+    if (!validateIndianPhoneOrNull(phone)) {
+      setMessage('Enter a valid Indian mobile number.');
+      return;
+    }
     if (!idFront || !idBack || !selfie) {
       setMessage('Helper KYC images are required.');
       return;
     }
     const body = new FormData();
-    body.append('email', helper.email);
+    body.append('email', email);
     body.append('password', helper.password);
-    if (helper.phone) body.append('phone', helper.phone);
+    if (phone) body.append('phone', phone);
     if (helper.displayName) body.append('displayName', helper.displayName);
     body.append('fullName', helper.fullName);
     body.append('idNumber', helper.idNumber);
@@ -113,6 +139,7 @@ export default function SignupPage() {
                 <input
                   value={buyer.email}
                   onChange={(e) => setBuyer((b) => ({ ...b, email: e.target.value }))}
+                  type="email"
                   inputMode="email"
                   autoComplete="email"
                   className="mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-foreground/25"
@@ -136,7 +163,9 @@ export default function SignupPage() {
                 <input
                   value={buyer.phone}
                   onChange={(e) => setBuyer((b) => ({ ...b, phone: e.target.value }))}
+                  type="tel"
                   inputMode="tel"
+                  pattern="[6-9][0-9]{9}"
                   className="mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-foreground/25"
                   placeholder="9999999999"
                 />
@@ -165,6 +194,7 @@ export default function SignupPage() {
                 <input
                   value={helper.email}
                   onChange={(e) => setHelper((h) => ({ ...h, email: e.target.value }))}
+                  type="email"
                   inputMode="email"
                   autoComplete="email"
                   className="mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-foreground/25"
@@ -188,7 +218,9 @@ export default function SignupPage() {
                 <input
                   value={helper.phone}
                   onChange={(e) => setHelper((h) => ({ ...h, phone: e.target.value }))}
+                  type="tel"
                   inputMode="tel"
+                  pattern="[6-9][0-9]{9}"
                   className="mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-foreground/25"
                   placeholder="9999999999"
                 />

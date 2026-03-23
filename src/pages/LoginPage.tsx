@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { getApiBaseUrl } from '../lib/api';
+import { normalizeEmailOrNull, normalizeIndianPhoneOrNull, validateEmailOrNull, validateIndianPhoneOrNull } from '../lib/validation';
 
 const showDevOtp = (import.meta.env.VITE_DEV_SHOW_OTP || 'false').toLowerCase() === 'true';
 
@@ -21,9 +22,14 @@ export default function LoginPage() {
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedEmail = normalizeEmailOrNull(email);
+    if (!normalizedEmail || !validateEmailOrNull(normalizedEmail)) {
+      setError('Enter a valid email address.');
+      return;
+    }
     setBusy(true);
     setError(null);
-    const res = await loginWithPassword(email.trim(), password.trim());
+    const res = await loginWithPassword(normalizedEmail, password.trim());
     setBusy(false);
     if (!res.ok) {
       setError(res.error || 'login_failed');
@@ -34,9 +40,14 @@ export default function LoginPage() {
 
   const handleStartOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedPhone = normalizeIndianPhoneOrNull(phone);
+    if (!normalizedPhone || !validateIndianPhoneOrNull(normalizedPhone)) {
+      setError('Enter a valid Indian mobile number.');
+      return;
+    }
     setBusy(true);
     setError(null);
-    const res = await startOtp(phone.trim());
+    const res = await startOtp(normalizedPhone);
     setBusy(false);
     if (!res.ok) {
       setError(res.error || 'otp_start_failed');
@@ -48,9 +59,14 @@ export default function LoginPage() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedPhone = normalizeIndianPhoneOrNull(phone);
+    if (!normalizedPhone || !validateIndianPhoneOrNull(normalizedPhone)) {
+      setError('Enter a valid Indian mobile number.');
+      return;
+    }
     setBusy(true);
     setError(null);
-    const res = await verifyOtp(phone.trim(), otp.trim());
+    const res = await verifyOtp(normalizedPhone, otp.trim());
     setBusy(false);
     if (!res.ok) {
       setError(res.error || 'otp_verify_failed');

@@ -1,6 +1,15 @@
 const API_BASE_URL =
   (import.meta as any).env?.VITE_API_BASE_URL || 'https://api.mysuperhero.xyz';
 
+function sanitizeError(status: number): string {
+  if (status === 401) return 'Session expired. Please sign in again.';
+  if (status === 403) return 'You are not authorized to perform this action.';
+  if (status === 404) return 'Requested resource was not found.';
+  if (status === 429) return 'Too many attempts. Please wait and retry.';
+  if (status >= 500) return 'Server error. Please retry in a moment.';
+  return 'Request failed. Please try again.';
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
@@ -11,7 +20,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(text || `HTTP ${res.status}`);
+    throw new Error(sanitizeError(res.status));
   }
   return text ? (JSON.parse(text) as T) : ({} as T);
 }
