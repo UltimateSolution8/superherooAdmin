@@ -1,5 +1,7 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '../lib/auth';
+import { onAuthExpired } from '../lib/api';
 import LoginPage from './LoginPage';
 import DashboardPage from './DashboardPage';
 import HelpersPage from './HelpersPage';
@@ -22,11 +24,43 @@ function Protected({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function PublicOnly({ children }: { children: React.ReactNode }) {
+  const { state } = useAuth();
+  if (state.accessToken) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
+
+function SessionExpiryWatcher() {
+  const navigate = useNavigate();
+  const { state, logout } = useAuth();
+
+  useEffect(() => {
+    const unsubscribe = onAuthExpired(() => {
+      if (!state.accessToken) return;
+      logout();
+      navigate('/login', { replace: true });
+    });
+    return unsubscribe;
+  }, [navigate, logout, state.accessToken]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <AuthProvider>
+      <SessionExpiryWatcher />
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/login"
+          element={(
+            <PublicOnly>
+              <LoginPage />
+            </PublicOnly>
+          )}
+        />
         <Route
           path="/"
           element={

@@ -29,12 +29,21 @@ const ACCESS_KEY = 'superheroo_admin_access';
 const REFRESH_KEY = 'superheroo_admin_refresh';
 const USER_KEY = 'superheroo_admin_user';
 
+function readUserFromStorage(): AuthUser | null {
+  try {
+    const userRaw = localStorage.getItem(USER_KEY);
+    return userRaw ? (JSON.parse(userRaw) as AuthUser) : null;
+  } catch {
+    localStorage.removeItem(USER_KEY);
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>(() => {
     const accessToken = localStorage.getItem(ACCESS_KEY);
     const refreshToken = localStorage.getItem(REFRESH_KEY);
-    const userRaw = localStorage.getItem(USER_KEY);
-    const user = userRaw ? (JSON.parse(userRaw) as AuthUser) : null;
+    const user = readUserFromStorage();
     return { accessToken, refreshToken, user };
   });
 
@@ -95,8 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hydrate = useCallback(() => {
     const accessToken = localStorage.getItem(ACCESS_KEY);
     const refreshToken = localStorage.getItem(REFRESH_KEY);
-    const userRaw = localStorage.getItem(USER_KEY);
-    const user = userRaw ? (JSON.parse(userRaw) as AuthUser) : null;
+    const user = readUserFromStorage();
     setState({ accessToken, refreshToken, user });
   }, []);
 

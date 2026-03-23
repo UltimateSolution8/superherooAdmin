@@ -3,6 +3,12 @@ import { Nav } from '../components/Nav';
 import { apiFetch } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { HelpersGrid, HelperRow } from '../components/HelpersGrid';
+import {
+  normalizeEmailOrNull,
+  normalizeIndianPhoneOrNull,
+  validateEmailOrNull,
+  validateIndianPhoneOrNull,
+} from '../lib/validation';
 
 export default function HelpersPage() {
   const { state } = useAuth();
@@ -26,6 +32,16 @@ export default function HelpersPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    const phone = normalizeIndianPhoneOrNull(form.phone);
+    const email = normalizeEmailOrNull(form.email);
+    if (!validateIndianPhoneOrNull(phone)) {
+      setError('Enter a valid Indian mobile number.');
+      return;
+    }
+    if (!validateEmailOrNull(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
     setCreating(true);
     setError(null);
     const res = await apiFetch<HelperRow>(
@@ -33,8 +49,8 @@ export default function HelpersPage() {
       {
         method: 'POST',
         body: JSON.stringify({
-          phone: form.phone || null,
-          email: form.email || null,
+          phone,
+          email,
           displayName: form.displayName || null,
           password: form.password || null,
         }),
@@ -66,6 +82,9 @@ export default function HelpersPage() {
             <input
               name="phone"
               placeholder="Phone"
+              type="tel"
+              inputMode="tel"
+              pattern="[6-9][0-9]{9}"
               className="rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
@@ -73,6 +92,8 @@ export default function HelpersPage() {
             <input
               name="email"
               placeholder="Email"
+              type="email"
+              inputMode="email"
               className="rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}

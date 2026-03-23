@@ -3,6 +3,12 @@ import type { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { DataGrid } from './DataGrid';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/api';
+import {
+  normalizeEmailOrNull,
+  normalizeIndianPhoneOrNull,
+  validateEmailOrNull,
+  validateIndianPhoneOrNull,
+} from '../lib/validation';
 
 export type BuyerRow = {
   id: string;
@@ -32,9 +38,19 @@ function ActionRenderer(params: ICellRendererParams<BuyerRow>) {
 
   const edit = async () => {
     const displayName = prompt('Display name', data.displayName ?? '') ?? data.displayName ?? '';
-    const phone = prompt('Phone', data.phone ?? '') ?? data.phone ?? '';
-    const email = prompt('Email', data.email ?? '') ?? data.email ?? '';
+    const phoneInput = prompt('Phone', data.phone ?? '') ?? data.phone ?? '';
+    const emailInput = prompt('Email', data.email ?? '') ?? data.email ?? '';
     const status = prompt('Status (ACTIVE/BLOCKED)', data.status) ?? data.status;
+    const phone = normalizeIndianPhoneOrNull(phoneInput);
+    const email = normalizeEmailOrNull(emailInput);
+    if (!validateIndianPhoneOrNull(phone)) {
+      alert('Enter a valid Indian mobile number.');
+      return;
+    }
+    if (!validateEmailOrNull(email)) {
+      alert('Enter a valid email address.');
+      return;
+    }
     const res = await apiFetch<BuyerRow>(
       `/api/v1/admin/buyers/${data.id}/update`,
       {
