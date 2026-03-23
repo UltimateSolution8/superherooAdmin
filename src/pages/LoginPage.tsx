@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { getApiBaseUrl } from '../lib/api';
 import { normalizeEmailOrNull, normalizeIndianPhoneOrNull, validateEmailOrNull, validateIndianPhoneOrNull } from '../lib/validation';
 
 const showDevOtp = (import.meta.env.VITE_DEV_SHOW_OTP || 'false').toLowerCase() === 'true';
@@ -17,8 +16,6 @@ export default function LoginPage() {
   const [devOtp, setDevOtp] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const apiBase = useMemo(() => getApiBaseUrl(), []);
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,11 +80,14 @@ export default function LoginPage() {
             <img src="/superlogo.png" className="h-10 w-10 rounded-xl" alt="Superheroo" />
             <div>
               <div className="text-lg font-semibold">Superheroo Admin</div>
-              <div className="text-xs text-foreground/60">API: {apiBase}</div>
             </div>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Sign in with email</h1>
-          {error && <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">{error}</div>}
+          {error && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-300">
+              {error}
+            </div>
+          )}
           <form className="space-y-3" onSubmit={handlePasswordLogin}>
             <input
               className="w-full rounded-xl border border-foreground/15 bg-transparent px-3 py-2 text-sm"
