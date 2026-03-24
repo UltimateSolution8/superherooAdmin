@@ -9,6 +9,9 @@ const root = document.getElementById('root');
 if (!root) {
   throw new Error('Missing root element');
 }
+// Keep admin in dark mode consistently so `dark:` utility classes render correctly
+// and text contrast remains readable across pages.
+document.documentElement.classList.add('dark');
 
 createRoot(root).render(
   <React.StrictMode>
