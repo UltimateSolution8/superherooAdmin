@@ -29,6 +29,22 @@ type BatchItem = {
   taskId?: string | null;
   taskStatus?: string | null;
   taskTitle?: string | null;
+  canRetry?: boolean;
+  canCancel?: boolean;
+};
+
+type CsvLine = {
+  title: string;
+  description: string;
+  urgency: string;
+  timeMinutes: number;
+  budgetPaise: number;
+  lat: number;
+  lng: number;
+  addressText?: string;
+  scheduledAt?: string;
+  externalRef?: string;
+  priority?: number;
 };
 
 const SAMPLE_LINES = JSON.stringify(
@@ -62,6 +78,67 @@ const SAMPLE_LINES = JSON.stringify(
   2,
 );
 
+function parseCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch === ',' && !inQuotes) {
+      out.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  out.push(current.trim());
+  return out;
+}
+
+function toNumber(value: string, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function csvToLines(content: string): CsvLine[] {
+  const rows = content
+    .split(/\r?\n/)
+    .map((r) => r.trim())
+    .filter(Boolean);
+  if (rows.length < 2) return [];
+  const header = parseCsvLine(rows[0]).map((h) => h.toLowerCase());
+  const idx = (name: string) => header.indexOf(name.toLowerCase());
+  return rows.slice(1).map((row) => {
+    const cells = parseCsvLine(row);
+    const get = (name: string) => {
+      const i = idx(name);
+      return i >= 0 ? (cells[i] ?? '') : '';
+    };
+    return {
+      title: get('title'),
+      description: get('description'),
+      urgency: (get('urgency') || 'NORMAL').toUpperCase(),
+      timeMinutes: toNumber(get('timeMinutes'), 30),
+      budgetPaise: toNumber(get('budgetPaise'), 0),
+      lat: toNumber(get('lat')),
+      lng: toNumber(get('lng')),
+      addressText: get('addressText') || undefined,
+      scheduledAt: get('scheduledAt') || undefined,
+      externalRef: get('externalRef') || undefined,
+      priority: toNumber(get('priority'), 3),
+    };
+  });
+}
+
 export default function BulkRequestsPage() {
   const { state } = useAuth();
   const token = state.accessToken;
@@ -74,6 +151,7 @@ export default function BulkRequestsPage() {
   const [items, setItems] = useState<BatchItem[]>([]);
   const [batchId, setBatchId] = useState('');
   const [busy, setBusy] = useState(false);
+  const [actingItemId, setActingItemId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -86,6 +164,24 @@ export default function BulkRequestsPage() {
     }
   }, [linesText]);
 
+  const onCsvUpload = useCallback(async (file: File | null) => {
+    if (!file) return;
+    setError(null);
+    setNotice(null);
+    try {
+      const raw = await file.text();
+      const parsed = csvToLines(raw);
+      if (!parsed.length) {
+        setError('CSV has no data rows.');
+        return;
+      }
+      setLinesText(JSON.stringify(parsed, null, 2));
+      setNotice(`Loaded ${parsed.length} rows from CSV.`);
+    } catch {
+      setError('Could not parse CSV file.');
+    }
+  }, []);
+
   const runPreview = useCallback(async () => {
     setError(null);
     setNotice(null);
@@ -95,10 +191,14 @@ export default function BulkRequestsPage() {
     }
     setBusy(true);
     try {
-      const res = await apiFetch<{ items: PreviewRow[] }>('/api/v1/batches/preview', {
-        method: 'POST',
-        body: JSON.stringify({ items: parsedLines }),
-      }, token);
+      const res = await apiFetch<{ items: PreviewRow[] }>(
+        '/api/v1/batches/preview',
+        {
+          method: 'POST',
+          body: JSON.stringify({ items: parsedLines }),
+        },
+        token,
+      );
       if (!res.ok) {
         setError(res.errorText);
         return;
@@ -109,6 +209,35 @@ export default function BulkRequestsPage() {
       setBusy(false);
     }
   }, [parsedLines, token]);
+
+  const loadBatch = useCallback(
+    async (idRaw?: string) => {
+      const id = (idRaw ?? batchId).trim();
+      if (!id) return;
+      setBusy(true);
+      setError(null);
+      try {
+        const [sumRes, itemsRes] = await Promise.all([
+          apiFetch<BatchSummary>(`/api/v1/batches/${id}`, undefined, token),
+          apiFetch<BatchItem[]>(`/api/v1/batches/${id}/items`, undefined, token),
+        ]);
+        if (!sumRes.ok) {
+          setError(sumRes.errorText);
+          return;
+        }
+        if (!itemsRes.ok) {
+          setError(itemsRes.errorText);
+          return;
+        }
+        setSummary(sumRes.data);
+        setItems(itemsRes.data ?? []);
+        setNotice('Batch loaded.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [batchId, token],
+  );
 
   const createBatch = useCallback(async () => {
     setError(null);
@@ -130,10 +259,14 @@ export default function BulkRequestsPage() {
         idempotencyKey: `bulk-${Date.now()}`,
         items: parsedLines,
       };
-      const res = await apiFetch<{ batchId: string; createdCount: number; failedCount: number }>('/api/v1/batches', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      }, token);
+      const res = await apiFetch<{ batchId: string; createdCount: number; failedCount: number }>(
+        '/api/v1/batches',
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        },
+        token,
+      );
       if (!res.ok) {
         setError(res.errorText);
         return;
@@ -145,33 +278,40 @@ export default function BulkRequestsPage() {
     } finally {
       setBusy(false);
     }
-  }, [buyerId, notes, parsedLines, title, token]);
+  }, [buyerId, notes, parsedLines, title, token, loadBatch]);
 
-  const loadBatch = useCallback(async (idRaw?: string) => {
-    const id = (idRaw ?? batchId).trim();
-    if (!id) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const [sumRes, itemsRes] = await Promise.all([
-        apiFetch<BatchSummary>(`/api/v1/batches/${id}`, undefined, token),
-        apiFetch<BatchItem[]>(`/api/v1/batches/${id}/items`, undefined, token),
-      ]);
-      if (!sumRes.ok) {
-        setError(sumRes.errorText);
-        return;
+  const actOnItem = useCallback(
+    async (item: BatchItem, action: 'retry' | 'cancel') => {
+      const id = batchId.trim();
+      if (!id) return;
+      setError(null);
+      setNotice(null);
+      setActingItemId(item.id);
+      try {
+        const body =
+          action === 'cancel'
+            ? JSON.stringify({ reason: 'Cancelled from bulk operations page' })
+            : undefined;
+        const res = await apiFetch<BatchItem>(
+          `/api/v1/batches/${id}/items/${item.id}/${action}`,
+          {
+            method: 'POST',
+            body,
+          },
+          token,
+        );
+        if (!res.ok) {
+          setError(res.errorText);
+          return;
+        }
+        setNotice(action === 'retry' ? `Retried line ${item.lineNo}.` : `Cancelled line ${item.lineNo}.`);
+        await loadBatch(id);
+      } finally {
+        setActingItemId(null);
       }
-      if (!itemsRes.ok) {
-        setError(itemsRes.errorText);
-        return;
-      }
-      setSummary(sumRes.data);
-      setItems(itemsRes.data ?? []);
-      setNotice('Batch loaded.');
-    } finally {
-      setBusy(false);
-    }
-  }, [batchId, token]);
+    },
+    [batchId, loadBatch, token],
+  );
 
   return (
     <main className="min-h-dvh bg-background text-foreground">
@@ -182,10 +322,14 @@ export default function BulkRequestsPage() {
           <p className="text-sm text-foreground/70">Preview, create, and track high-volume task batches safely.</p>
         </div>
 
-        {error ? <p className="rounded-lg bg-red-500/10 border border-red-500/30 p-3 text-sm text-red-300">{error}</p> : null}
-        {notice ? <p className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 text-sm text-emerald-300">{notice}</p> : null}
+        {error ? (
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{error}</p>
+        ) : null}
+        {notice ? (
+          <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300">{notice}</p>
+        ) : null}
 
-        <section className="rounded-2xl border border-foreground/10 p-5 space-y-4">
+        <section className="space-y-4 rounded-2xl border border-foreground/10 p-5">
           <h2 className="text-sm font-semibold">Create Batch</h2>
           <div className="grid gap-3 md:grid-cols-2">
             <input
@@ -207,18 +351,45 @@ export default function BulkRequestsPage() {
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Notes"
           />
+          <label className="inline-flex w-fit cursor-pointer rounded-lg border border-foreground/20 px-3 py-2 text-xs hover:bg-foreground/5">
+            Upload CSV
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                void onCsvUpload(e.target.files?.[0] ?? null);
+                e.currentTarget.value = '';
+              }}
+            />
+          </label>
+          <p className="text-xs text-foreground/60">
+            CSV header: title,description,urgency,timeMinutes,budgetPaise,lat,lng,addressText,scheduledAt,externalRef,priority
+          </p>
           <textarea
             className="min-h-[260px] w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm font-mono outline-none"
             value={linesText}
             onChange={(e) => setLinesText(e.target.value)}
           />
           <div className="flex flex-wrap gap-2">
-            <button disabled={busy} onClick={runPreview} className="rounded-lg border border-foreground/15 px-4 py-2 text-sm hover:bg-foreground/5">Preview</button>
-            <button disabled={busy} onClick={createBatch} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Create Batch</button>
+            <button
+              disabled={busy}
+              onClick={runPreview}
+              className="rounded-lg border border-foreground/15 px-4 py-2 text-sm hover:bg-foreground/5"
+            >
+              Preview
+            </button>
+            <button
+              disabled={busy}
+              onClick={createBatch}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+            >
+              Create Batch
+            </button>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-foreground/10 p-5 space-y-3">
+        <section className="space-y-3 rounded-2xl border border-foreground/10 p-5">
           <h2 className="text-sm font-semibold">Batch Lookup</h2>
           <div className="flex flex-wrap gap-2">
             <input
@@ -227,7 +398,11 @@ export default function BulkRequestsPage() {
               onChange={(e) => setBatchId(e.target.value)}
               placeholder="Batch UUID"
             />
-            <button disabled={busy} onClick={() => loadBatch()} className="rounded-lg border border-foreground/15 px-4 py-2 text-sm hover:bg-foreground/5">
+            <button
+              disabled={busy}
+              onClick={() => loadBatch()}
+              className="rounded-lg border border-foreground/15 px-4 py-2 text-sm hover:bg-foreground/5"
+            >
               Load
             </button>
           </div>
@@ -237,7 +412,9 @@ export default function BulkRequestsPage() {
               <div className="text-foreground/70">Status: {summary.status} · Total lines: {summary.total}</div>
               <div className="text-foreground/60">Created: {new Date(summary.createdAt).toLocaleString()}</div>
               <div className="mt-2 text-xs text-foreground/70">
-                {Object.entries(summary.byTaskStatus || {}).map(([k, v]) => `${k}: ${v}`).join(' | ')}
+                {Object.entries(summary.byTaskStatus || {})
+                  .map(([k, v]) => `${k}: ${v}`)
+                  .join(' | ')}
               </div>
             </div>
           ) : null}
@@ -245,7 +422,7 @@ export default function BulkRequestsPage() {
 
         {preview.length > 0 ? (
           <section className="rounded-2xl border border-foreground/10 p-5">
-            <h2 className="text-sm font-semibold mb-3">Preview</h2>
+            <h2 className="mb-3 text-sm font-semibold">Preview</h2>
             <div className="overflow-auto rounded-xl border border-foreground/10">
               <table className="w-full text-sm">
                 <thead className="bg-foreground/5 text-foreground/70">
@@ -273,7 +450,7 @@ export default function BulkRequestsPage() {
 
         {items.length > 0 ? (
           <section className="rounded-2xl border border-foreground/10 p-5">
-            <h2 className="text-sm font-semibold mb-3">Batch Items</h2>
+            <h2 className="mb-3 text-sm font-semibold">Batch Items</h2>
             <div className="overflow-auto rounded-xl border border-foreground/10">
               <table className="w-full text-sm">
                 <thead className="bg-foreground/5 text-foreground/70">
@@ -283,21 +460,43 @@ export default function BulkRequestsPage() {
                     <th className="px-3 py-2 text-left">Task</th>
                     <th className="px-3 py-2 text-left">Status</th>
                     <th className="px-3 py-2 text-left">Error</th>
+                    <th className="px-3 py-2 text-left">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((r) => (
-                    <tr key={r.id} className="border-t border-foreground/10">
-                      <td className="px-3 py-2">{r.lineNo}</td>
-                      <td className="px-3 py-2">{r.externalRef || '-'}</td>
-                      <td className="px-3 py-2">
-                        <div>{r.taskTitle || '-'}</div>
-                        <div className="text-xs text-foreground/60">{r.taskId || '-'}</div>
-                      </td>
-                      <td className="px-3 py-2">{r.taskStatus || r.lineStatus}</td>
-                      <td className="px-3 py-2">{r.errorMessage || '-'}</td>
-                    </tr>
-                  ))}
+                  {items.map((r) => {
+                    const rowBusy = actingItemId === r.id;
+                    return (
+                      <tr key={r.id} className="border-t border-foreground/10">
+                        <td className="px-3 py-2">{r.lineNo}</td>
+                        <td className="px-3 py-2">{r.externalRef || '-'}</td>
+                        <td className="px-3 py-2">
+                          <div>{r.taskTitle || '-'}</div>
+                          <div className="text-xs text-foreground/60">{r.taskId || '-'}</div>
+                        </td>
+                        <td className="px-3 py-2">{r.taskStatus || r.lineStatus}</td>
+                        <td className="px-3 py-2">{r.errorMessage || '-'}</td>
+                        <td className="px-3 py-2">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              disabled={rowBusy || !r.canRetry}
+                              onClick={() => void actOnItem(r, 'retry')}
+                              className="rounded-md border border-foreground/20 px-2 py-1 text-xs disabled:opacity-50"
+                            >
+                              Retry
+                            </button>
+                            <button
+                              disabled={rowBusy || !r.canCancel}
+                              onClick={() => void actOnItem(r, 'cancel')}
+                              className="rounded-md border border-red-400/40 px-2 py-1 text-xs text-red-300 disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -307,4 +506,3 @@ export default function BulkRequestsPage() {
     </main>
   );
 }
-
