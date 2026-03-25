@@ -9,6 +9,7 @@ const navItems = [
   { label: 'Live KYC', href: '/kyc/live', icon: '📹' },
   { label: 'Buyers', href: '/buyers', icon: '🛒' },
   { label: 'Tasks', href: '/tasks', icon: '📋' },
+  { label: 'Bulk Requests', href: '/bulk-requests', icon: '🧾' },
   { label: 'Support', href: '/support/tickets', icon: '💬' },
   { label: 'Create User', href: '/signup', icon: '➕' },
 ];
