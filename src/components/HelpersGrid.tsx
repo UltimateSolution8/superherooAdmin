@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import type { ColDef, ICellRendererParams } from 'ag-grid-community';
+import { useMemo, useState } from 'react';
+import type { ColDef, ICellRendererParams, GridApi } from 'ag-grid-community';
 import { DataGrid } from './DataGrid';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/api';
@@ -116,8 +116,52 @@ function ActionRenderer(params: ICellRendererParams<HelperRow>) {
 }
 
 export function HelpersGrid({ helpers }: { helpers: HelperRow[] }) {
+  const { state } = useAuth();
+  const [gridApi, setGridApi] = useState<GridApi<HelperRow> | null>(null);
+
+  const runBulkStatusUpdate = async (status: 'ACTIVE' | 'BLOCKED') => {
+    if (!gridApi) return;
+    const selected = gridApi.getSelectedRows();
+    if (!selected.length) {
+      alert('Select at least one helper.');
+      return;
+    }
+    const userIds = selected.map((r) => r.id);
+    const res = await apiFetch<{ requested: number; succeeded: number; failed: number; failures: { id: string; message: string }[] }>(
+      '/api/v1/admin/helpers/bulk-update',
+      { method: 'POST', body: JSON.stringify({ userIds, status }) },
+      state.accessToken,
+    );
+    if (!res.ok) {
+      alert(`Bulk update failed (${res.status || 'network'})`);
+      return;
+    }
+    const updated = selected.map((row) => ({ ...row, status }));
+    gridApi.applyTransaction({ update: updated });
+    const msg = `Updated ${res.data.succeeded}/${res.data.requested} helpers to ${status}.`;
+    if (res.data.failed > 0) {
+      alert(`${msg} Failed: ${res.data.failed}`);
+    } else {
+      alert(msg);
+    }
+  };
+
   const columnDefs = useMemo<ColDef<HelperRow>[]>(
     () => [
+      {
+        headerName: '',
+        field: 'id',
+        width: 54,
+        minWidth: 54,
+        maxWidth: 54,
+        pinned: 'left',
+        sortable: false,
+        filter: false,
+        resizable: false,
+        checkboxSelection: true,
+        headerCheckboxSelection: true,
+        headerCheckboxSelectionFilteredOnly: true,
+      },
       {
         headerName: 'ID',
         field: 'id',
@@ -178,6 +222,25 @@ export function HelpersGrid({ helpers }: { helpers: HelperRow[] }) {
       height={640}
       dateField="createdAt"
       exportFileName="superheroo-helpers.xlsx"
+      onGridReady={(api) => setGridApi(api)}
+      extraContent={(
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void runBulkStatusUpdate('ACTIVE')}
+            className="rounded-lg border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10"
+          >
+            Bulk Set ACTIVE
+          </button>
+          <button
+            type="button"
+            onClick={() => void runBulkStatusUpdate('BLOCKED')}
+            className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10"
+          >
+            Bulk Set BLOCKED
+          </button>
+        </div>
+      )}
     />
   );
 }

@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import type { ColDef, ICellRendererParams } from 'ag-grid-community';
+import { useMemo, useState } from 'react';
+import type { ColDef, ICellRendererParams, GridApi } from 'ag-grid-community';
 import { DataGrid } from './DataGrid';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/api';
@@ -76,8 +76,63 @@ function ActionRenderer(params: ICellRendererParams<PendingHelperRow>) {
 }
 
 export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] }) {
+  const { state } = useAuth();
+  const [gridApi, setGridApi] = useState<GridApi<PendingHelperRow> | null>(null);
+
+  const runBulkAction = async (action: 'APPROVE' | 'REJECT') => {
+    if (!gridApi) return;
+    const selected = gridApi.getSelectedRows();
+    if (!selected.length) {
+      alert('Select at least one helper.');
+      return;
+    }
+    const helperIds = selected.map((r) => r.helperId);
+    const reason = action === 'REJECT' ? (prompt('Rejection reason for selected helpers') || 'Rejected in bulk action') : undefined;
+    const res = await apiFetch<{ requested: number; succeeded: number; failed: number; failures: { id: string; message: string }[] }>(
+      '/api/v1/admin/helpers/pending/bulk-action',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          helperIds,
+          action,
+          reason,
+        }),
+      },
+      state.accessToken,
+    );
+    if (!res.ok) {
+      alert(`Bulk action failed (${res.status || 'network'})`);
+      return;
+    }
+    const failedIds = new Set((res.data.failures || []).map((f) => f.id));
+    const toRemove = selected.filter((row) => !failedIds.has(row.helperId));
+    if (toRemove.length > 0) {
+      gridApi.applyTransaction({ remove: toRemove });
+    }
+    const msg = `${action} completed for ${res.data.succeeded}/${res.data.requested} helpers.`;
+    if (res.data.failed > 0) {
+      alert(`${msg} Failed: ${res.data.failed}`);
+    } else {
+      alert(msg);
+    }
+  };
+
   const columnDefs = useMemo<ColDef<PendingHelperRow>[]>(
     () => [
+      {
+        headerName: '',
+        field: 'helperId',
+        width: 54,
+        minWidth: 54,
+        maxWidth: 54,
+        pinned: 'left',
+        sortable: false,
+        filter: false,
+        resizable: false,
+        checkboxSelection: true,
+        headerCheckboxSelection: true,
+        headerCheckboxSelectionFilteredOnly: true,
+      },
       {
         headerName: 'Helper ID',
         field: 'helperId',
@@ -126,6 +181,25 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
       height={640}
       dateField="kycSubmittedAt"
       exportFileName="superheroo-pending-kyc.xlsx"
+      onGridReady={(api) => setGridApi(api)}
+      extraContent={(
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void runBulkAction('APPROVE')}
+            className="rounded-lg border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10"
+          >
+            Bulk Approve
+          </button>
+          <button
+            type="button"
+            onClick={() => void runBulkAction('REJECT')}
+            className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10"
+          >
+            Bulk Reject
+          </button>
+        </div>
+      )}
     />
   );
 }
