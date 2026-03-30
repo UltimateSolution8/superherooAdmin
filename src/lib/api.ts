@@ -66,7 +66,7 @@ export async function apiFetch<T>(
 
   if (!res.ok) {
     const rawError = await safeText(res);
-    if (res.status === 401 && !path.startsWith('/api/v1/auth/')) {
+    if ((res.status === 401 || res.status === 403) && !path.startsWith('/api/v1/auth/')) {
       emitAuthExpired();
     }
     const errorText = mapErrorToMessage(res.status, rawError);
