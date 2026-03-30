@@ -363,6 +363,22 @@ export default function BulkRequestsPage() {
               }}
             />
           </label>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <a
+              href="/templates/bulk-task-template.csv"
+              download
+              className="rounded-lg border border-foreground/20 px-3 py-2 hover:bg-foreground/5"
+            >
+              Download Sample CSV
+            </a>
+            <a
+              href="/templates/bulk-task-template.xlsx"
+              download
+              className="rounded-lg border border-foreground/20 px-3 py-2 hover:bg-foreground/5"
+            >
+              Download Sample Excel
+            </a>
+          </div>
           <p className="text-xs text-foreground/60">
             CSV header: title,description,urgency,timeMinutes,budgetPaise,lat,lng,addressText,scheduledAt,externalRef,priority
           </p>
