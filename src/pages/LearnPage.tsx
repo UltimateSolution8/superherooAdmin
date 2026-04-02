@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Nav } from '../components/Nav';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/api';
@@ -58,6 +58,13 @@ type Attempt = {
   createdAt?: string | null;
 };
 
+type UploadedAsset = {
+  url: string;
+  contentType?: string | null;
+  sizeBytes?: number | null;
+  fileName?: string | null;
+};
+
 const SAMPLE_SCHEMA = JSON.stringify(
   [
     {
@@ -113,6 +120,7 @@ export default function LearnPage() {
   const [mThumbnail, setMThumbnail] = useState('');
   const [mDuration, setMDuration] = useState('');
   const [mActive, setMActive] = useState(true);
+  const materialFileRef = useRef<HTMLInputElement | null>(null);
 
   const [progressRows, setProgressRows] = useState<ProgressRow[]>([]);
   const [progressMaterialId, setProgressMaterialId] = useState('');
@@ -217,6 +225,33 @@ export default function LearnPage() {
       setBusy(false);
     }
   }, [editingMaterialId, loadMaterials, mActive, mDescription, mDuration, mThumbnail, mTitle, mType, mUrl, token]);
+
+  const uploadMaterialFile = useCallback(async (file: File) => {
+    clearAlerts();
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await apiFetch<UploadedAsset>(
+        '/api/v1/admin/learn/materials/upload',
+        { method: 'POST', body: fd },
+        token,
+      );
+      if (!res.ok) {
+        setError(res.errorText);
+        return;
+      }
+      const uploadedType = (res.data.contentType || '').toLowerCase();
+      if (uploadedType.startsWith('video/')) setMType('VIDEO');
+      else if (uploadedType.startsWith('audio/')) setMType('AUDIO');
+      else if (uploadedType.includes('pdf')) setMType('PDF');
+      else setMType('LINK');
+      setMUrl(res.data.url || '');
+      setNotice(`Uploaded ${res.data.fileName || 'file'} successfully.`);
+    } finally {
+      setBusy(false);
+    }
+  }, [token]);
 
   const loadProgress = useCallback(async () => {
     setBusy(true);
@@ -396,6 +431,32 @@ export default function LearnPage() {
                 <input className="rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm" value={mDuration} onChange={(e) => setMDuration(e.target.value)} placeholder="Duration (sec)" />
               </div>
               <input className="w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm" value={mUrl} onChange={(e) => setMUrl(e.target.value)} placeholder="Resource URL" />
+              <div className="rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-foreground/75">Upload video/audio/pdf or keep external URL above.</span>
+                  <button
+                    type="button"
+                    className="rounded-md border border-foreground/20 px-2.5 py-1 text-xs font-semibold hover:bg-foreground/5"
+                    onClick={() => materialFileRef.current?.click()}
+                    disabled={busy}
+                  >
+                    Upload File
+                  </button>
+                </div>
+                <input
+                  ref={materialFileRef}
+                  type="file"
+                  className="hidden"
+                  accept="video/*,audio/*,.pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      void uploadMaterialFile(file);
+                    }
+                    e.currentTarget.value = '';
+                  }}
+                />
+              </div>
               <input className="w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm" value={mThumbnail} onChange={(e) => setMThumbnail(e.target.value)} placeholder="Thumbnail URL (optional)" />
               <label className="flex items-center gap-2 text-xs text-foreground/80">
                 <input type="checkbox" checked={mActive} onChange={(e) => setMActive(e.target.checked)} />
