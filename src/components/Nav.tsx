@@ -10,6 +10,7 @@ const navItems = [
   { label: 'Buyers', href: '/buyers', icon: '🛒' },
   { label: 'Tasks', href: '/tasks', icon: '📋' },
   { label: 'Bulk Requests', href: '/bulk-requests', icon: '🧾' },
+  { label: 'Learn', href: '/learn', icon: '🎓' },
   { label: 'Support', href: '/support/tickets', icon: '💬' },
   { label: 'Create User', href: '/signup', icon: '➕' },
 ];

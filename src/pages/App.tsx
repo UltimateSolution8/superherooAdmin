@@ -16,6 +16,7 @@ import VideoKycPage from './VideoKycPage';
 import LiveKycPage from './LiveKycPage';
 import LiveKycJoinPage from './LiveKycJoinPage';
 import BulkRequestsPage from './BulkRequestsPage';
+import LearnPage from './LearnPage';
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { state } = useAuth();
@@ -156,6 +157,14 @@ export default function App() {
           element={
             <Protected>
               <BulkRequestsPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/learn"
+          element={
+            <Protected>
+              <LearnPage />
             </Protected>
           }
         />
