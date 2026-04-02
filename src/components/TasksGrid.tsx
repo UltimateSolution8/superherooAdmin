@@ -25,6 +25,8 @@ export type TaskRow = {
   createdAt: string;
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const STATUS_COLORS: Record<string, string> = {
   SEARCHING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
   ASSIGNED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
@@ -69,7 +71,17 @@ export function TasksGrid({ tasks }: { tasks: TaskRow[] }) {
       alert('Select at least one task.');
       return;
     }
-    const taskIds = selected.map((r) => r.id);
+    const taskIds = Array.from(
+      new Set(
+        selected
+          .map((r) => (typeof r.id === 'string' ? r.id.trim() : ''))
+          .filter((id) => UUID_RE.test(id)),
+      ),
+    );
+    if (!taskIds.length) {
+      alert('Selected rows do not contain valid task IDs.');
+      return;
+    }
     const res = await apiFetch<{ requested: number; succeeded: number; failed: number; failures: { id: string; message: string }[] }>(
       '/api/v1/admin/tasks/bulk-status',
       { method: 'POST', body: JSON.stringify({ taskIds, status: nextStatus }) },
@@ -80,7 +92,9 @@ export function TasksGrid({ tasks }: { tasks: TaskRow[] }) {
       return;
     }
     const failedIds = new Set((res.data.failures || []).map((f) => f.id));
+    const ids = new Set(taskIds);
     const updates = selected
+      .filter((row) => ids.has(row.id))
       .filter((row) => !failedIds.has(row.id))
       .map((row) => ({ ...row, status: nextStatus }));
     if (updates.length > 0) {

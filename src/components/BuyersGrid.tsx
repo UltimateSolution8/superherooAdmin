@@ -20,6 +20,8 @@ export type BuyerRow = {
   createdAt: string;
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
   BLOCKED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
@@ -104,7 +106,17 @@ export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
       alert('Select at least one buyer.');
       return;
     }
-    const userIds = selected.map((r) => r.id);
+    const userIds = Array.from(
+      new Set(
+        selected
+          .map((r) => (typeof r.id === 'string' ? r.id.trim() : ''))
+          .filter((id) => UUID_RE.test(id)),
+      ),
+    );
+    if (!userIds.length) {
+      alert('Selected rows do not contain valid buyer IDs.');
+      return;
+    }
     const res = await apiFetch<{ requested: number; succeeded: number; failed: number; failures: { id: string; message: string }[] }>(
       '/api/v1/admin/buyers/bulk-update',
       { method: 'POST', body: JSON.stringify({ userIds, status }) },
@@ -114,7 +126,8 @@ export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
       alert(`Bulk update failed (${res.status || 'network'})`);
       return;
     }
-    const updated = selected.map((row) => ({ ...row, status }));
+    const ids = new Set(userIds);
+    const updated = selected.filter((row) => ids.has(row.id)).map((row) => ({ ...row, status }));
     gridApi.applyTransaction({ update: updated });
     const msg = `Updated ${res.data.succeeded}/${res.data.requested} buyers to ${status}.`;
     if (res.data.failed > 0) {
