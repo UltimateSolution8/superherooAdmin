@@ -17,6 +17,8 @@ export type PendingHelperRow = {
   selfieUrl: string | null;
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function DocsRenderer(params: ICellRendererParams<PendingHelperRow>) {
   const d = params.data;
   if (!d) return null;
@@ -86,7 +88,17 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
       alert('Select at least one helper.');
       return;
     }
-    const helperIds = selected.map((r) => r.helperId);
+    const helperIds = Array.from(
+      new Set(
+        selected
+          .map((r) => (typeof r.helperId === 'string' ? r.helperId.trim() : ''))
+          .filter((id) => UUID_RE.test(id)),
+      ),
+    );
+    if (!helperIds.length) {
+      alert('Selected rows do not contain valid helper IDs.');
+      return;
+    }
     const reason = action === 'REJECT' ? (prompt('Rejection reason for selected helpers') || 'Rejected in bulk action') : undefined;
     const res = await apiFetch<{ requested: number; succeeded: number; failed: number; failures: { id: string; message: string }[] }>(
       '/api/v1/admin/helpers/pending/bulk-action',
@@ -105,7 +117,8 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
       return;
     }
     const failedIds = new Set((res.data.failures || []).map((f) => f.id));
-    const toRemove = selected.filter((row) => !failedIds.has(row.helperId));
+    const ids = new Set(helperIds);
+    const toRemove = selected.filter((row) => ids.has(row.helperId) && !failedIds.has(row.helperId));
     if (toRemove.length > 0) {
       gridApi.applyTransaction({ remove: toRemove });
     }
