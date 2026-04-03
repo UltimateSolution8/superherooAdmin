@@ -65,40 +65,163 @@ type UploadedAsset = {
   fileName?: string | null;
 };
 
-const SAMPLE_SCHEMA = JSON.stringify(
-  [
+type BuilderQuestionType =
+  | 'section'
+  | 'single_choice'
+  | 'multiple_choice'
+  | 'boolean'
+  | 'text'
+  | 'long_text'
+  | 'number'
+  | 'email'
+  | 'url'
+  | 'rating';
+
+type BuilderQuestion = {
+  key: string;
+  id: string;
+  type: BuilderQuestionType;
+  label: string;
+  required: boolean;
+  points: string;
+  optionsText: string;
+  correctAnswerText: string;
+  dependsOnQuestionId: string;
+  dependsOnValueText: string;
+};
+
+const QUESTION_TYPE_OPTIONS: Array<{ value: BuilderQuestionType; label: string }> = [
+  { value: 'section', label: 'Section heading' },
+  { value: 'single_choice', label: 'Single select (radio)' },
+  { value: 'multiple_choice', label: 'Multi select (checkbox)' },
+  { value: 'boolean', label: 'Yes / No' },
+  { value: 'text', label: 'Short text' },
+  { value: 'long_text', label: 'Long text' },
+  { value: 'number', label: 'Number' },
+  { value: 'email', label: 'Email' },
+  { value: 'url', label: 'URL' },
+  { value: 'rating', label: 'Star rating (1-5)' },
+];
+
+function nextQuestionId(index: number) {
+  return `q${index + 1}`;
+}
+
+function makeQuestion(index: number, type: BuilderQuestionType = 'single_choice'): BuilderQuestion {
+  return {
+    key: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    id: nextQuestionId(index),
+    type,
+    label: type === 'section' ? `Section ${index + 1}` : '',
+    required: true,
+    points: '1',
+    optionsText: type === 'single_choice' || type === 'multiple_choice' ? 'Option 1\nOption 2' : '',
+    correctAnswerText: '',
+    dependsOnQuestionId: '',
+    dependsOnValueText: '',
+  };
+}
+
+function sampleQuestions(): BuilderQuestion[] {
+  return [
     {
-      id: 'q1',
-      type: 'single_choice',
+      ...makeQuestion(0, 'section'),
+      label: 'Safety Basics',
+      required: false,
+      points: '0',
+    },
+    {
+      ...makeQuestion(1, 'single_choice'),
       label: 'What is the safe first step before entering customer premises?',
-      required: true,
-      options: ['Verify task details in app', 'Call a friend', 'Skip safety checks'],
-      correctAnswer: 'Verify task details in app',
-      points: 2,
+      optionsText: 'Verify task details in app\nCall a friend\nSkip safety checks',
+      correctAnswerText: 'Verify task details in app',
+      points: '2',
     },
     {
-      id: 'q2',
-      type: 'multiple_choice',
+      ...makeQuestion(2, 'multiple_choice'),
       label: 'Select mandatory safety actions',
-      required: true,
-      options: ['Wear ID card', 'Collect upfront cash without consent', 'Confirm OTP at correct stage'],
-      correctAnswer: ['Wear ID card', 'Confirm OTP at correct stage'],
-      points: 3,
+      optionsText: 'Wear ID card\nCollect upfront cash without consent\nConfirm OTP at correct stage',
+      correctAnswerText: 'Wear ID card, Confirm OTP at correct stage',
+      points: '3',
     },
-    {
-      id: 'q3',
-      type: 'boolean',
-      label: 'Should helper share customer phone publicly?',
-      required: true,
-      correctAnswer: false,
-      points: 1,
-      dependsOnQuestionId: 'q2',
-      dependsOnValue: ['Wear ID card'],
-    },
-  ],
-  null,
-  2,
-);
+  ];
+}
+
+function normalizeBuilderType(raw: unknown): BuilderQuestionType {
+  const t = String(raw || '').trim().toLowerCase();
+  if (QUESTION_TYPE_OPTIONS.some((o) => o.value === t)) return t as BuilderQuestionType;
+  if (t === 'radio') return 'single_choice';
+  if (t === 'multiselect' || t === 'checkbox') return 'multiple_choice';
+  if (t === 'numeric') return 'number';
+  if (t === 'yes_no' || t === 'bool') return 'boolean';
+  if (t === 'short_text') return 'text';
+  return 'text';
+}
+
+function toOptionsText(value: unknown): string {
+  if (!Array.isArray(value)) return '';
+  return value
+    .map((v) => {
+      if (v && typeof v === 'object') {
+        const option = v as Record<string, unknown>;
+        return String(option.label ?? option.value ?? option.id ?? '').trim();
+      }
+      return String(v ?? '').trim();
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+function toAnswerText(value: unknown): string {
+  if (Array.isArray(value)) return value.map((v) => String(v ?? '').trim()).filter(Boolean).join(', ');
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (value == null) return '';
+  return String(value).trim();
+}
+
+function toDependsValueText(value: unknown): string {
+  if (Array.isArray(value)) return value.map((v) => String(v ?? '').trim()).filter(Boolean).join(', ');
+  if (value == null) return '';
+  return String(value).trim();
+}
+
+function schemaToBuilder(schema: unknown): BuilderQuestion[] {
+  if (!Array.isArray(schema) || !schema.length) return sampleQuestions();
+  const mapped = schema
+    .map((q, idx) => {
+      if (!q || typeof q !== 'object') return null;
+      const node = q as Record<string, unknown>;
+      const type = normalizeBuilderType(node.type);
+      return {
+        key: `${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
+        id: String(node.id ?? nextQuestionId(idx)).trim() || nextQuestionId(idx),
+        type,
+        label: String(node.label ?? '').trim(),
+        required: type === 'section' ? false : Boolean(node.required ?? true),
+        points: String(typeof node.points === 'number' ? node.points : 1),
+        optionsText: toOptionsText(node.options),
+        correctAnswerText: toAnswerText(node.correctAnswer),
+        dependsOnQuestionId: String(node.dependsOnQuestionId ?? '').trim(),
+        dependsOnValueText: toDependsValueText(node.dependsOnValue),
+      } satisfies BuilderQuestion;
+    })
+    .filter(Boolean) as BuilderQuestion[];
+  return mapped.length ? mapped : sampleQuestions();
+}
+
+function parseOptions(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function parseCsv(text: string): string[] {
+  return text
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
 
 type TabKey = 'materials' | 'progress' | 'assessments';
 
@@ -134,7 +257,7 @@ export default function LearnPage() {
   const [aMaxAttempts, setAMaxAttempts] = useState('1');
   const [aTimeLimit, setATimeLimit] = useState('30');
   const [aPassPercentage, setAPassPercentage] = useState('60');
-  const [aSchema, setASchema] = useState(SAMPLE_SCHEMA);
+  const [aQuestions, setAQuestions] = useState<BuilderQuestion[]>(sampleQuestions);
   const [aActive, setAActive] = useState(true);
   const [attemptRows, setAttemptRows] = useState<Attempt[]>([]);
   const [attemptAssessmentTitle, setAttemptAssessmentTitle] = useState<string | null>(null);
@@ -163,7 +286,7 @@ export default function LearnPage() {
     setAMaxAttempts('1');
     setATimeLimit('30');
     setAPassPercentage('60');
-    setASchema(SAMPLE_SCHEMA);
+    setAQuestions(sampleQuestions());
     setAActive(true);
   };
 
@@ -289,15 +412,23 @@ export default function LearnPage() {
     }
   }, [token]);
 
+  const addQuestion = useCallback((type: BuilderQuestionType = 'single_choice') => {
+    setAQuestions((prev) => [...prev, makeQuestion(prev.length, type)]);
+  }, []);
+
+  const updateQuestion = useCallback((key: string, patch: Partial<BuilderQuestion>) => {
+    setAQuestions((prev) => prev.map((q) => (q.key === key ? { ...q, ...patch } : q)));
+  }, []);
+
+  const removeQuestion = useCallback((key: string) => {
+    setAQuestions((prev) => {
+      const next = prev.filter((q) => q.key !== key);
+      return next.length ? next : [makeQuestion(0, 'single_choice')];
+    });
+  }, []);
+
   const saveAssessment = useCallback(async () => {
     clearAlerts();
-    let parsedSchema: unknown;
-    try {
-      parsedSchema = JSON.parse(aSchema);
-    } catch {
-      setError('Question schema JSON is invalid.');
-      return;
-    }
     const maxAttempts = Number(aMaxAttempts);
     const passPercentage = Number(aPassPercentage);
     const timeLimitMinutes = aTimeLimit.trim() ? Number(aTimeLimit) : null;
@@ -318,6 +449,75 @@ export default function LearnPage() {
       return;
     }
 
+    const schema: Record<string, unknown>[] = [];
+    let evaluableQuestions = 0;
+    for (let i = 0; i < aQuestions.length; i += 1) {
+      const q = aQuestions[i];
+      const id = q.id.trim() || nextQuestionId(i);
+      const label = q.label.trim();
+      if (!label) {
+        setError(`Question ${i + 1} label is required.`);
+        return;
+      }
+      const node: Record<string, unknown> = {
+        id,
+        type: q.type,
+        label,
+      };
+      if (q.type !== 'section') {
+        node.required = q.required;
+        const pts = Number(q.points || '1');
+        node.points = Number.isFinite(pts) ? Math.max(0, Math.round(pts)) : 1;
+      } else {
+        node.required = false;
+        node.points = 0;
+      }
+
+      if (q.dependsOnQuestionId.trim()) {
+        node.dependsOnQuestionId = q.dependsOnQuestionId.trim();
+        const depValues = parseCsv(q.dependsOnValueText);
+        if (depValues.length === 1) {
+          node.dependsOnValue = depValues[0];
+        } else if (depValues.length > 1) {
+          node.dependsOnValue = depValues;
+        }
+      }
+
+      if (q.type === 'single_choice' || q.type === 'multiple_choice') {
+        const options = parseOptions(q.optionsText);
+        if (options.length < 2) {
+          setError(`Question ${i + 1} needs at least 2 options.`);
+          return;
+        }
+        node.options = options;
+      }
+
+      const answerText = q.correctAnswerText.trim();
+      if (q.type === 'multiple_choice') {
+        const answers = parseCsv(answerText);
+        if (answers.length) node.correctAnswer = answers;
+      } else if (q.type === 'boolean') {
+        if (answerText) node.correctAnswer = answerText.toLowerCase() === 'true' || answerText.toLowerCase() === 'yes';
+      } else if (q.type === 'number' || q.type === 'rating') {
+        if (answerText) {
+          const num = Number(answerText);
+          if (Number.isFinite(num)) node.correctAnswer = num;
+        }
+      } else if (q.type === 'section') {
+        node.correctAnswer = null;
+      } else if (answerText) {
+        node.correctAnswer = answerText;
+      }
+
+      if (q.type !== 'section') evaluableQuestions += 1;
+      schema.push(node);
+    }
+
+    if (!schema.length || evaluableQuestions === 0) {
+      setError('Add at least one question (not just section headings).');
+      return;
+    }
+
     const payload = {
       title: aTitle.trim(),
       description: aDescription.trim() || null,
@@ -325,7 +525,7 @@ export default function LearnPage() {
       maxAttempts: Math.round(maxAttempts),
       timeLimitMinutes: timeLimitMinutes == null ? null : Math.round(timeLimitMinutes),
       passPercentage: Math.round(passPercentage),
-      questionSchema: parsedSchema,
+      questionSchema: schema,
       active: aActive,
     };
     setBusy(true);
@@ -349,7 +549,7 @@ export default function LearnPage() {
     } finally {
       setBusy(false);
     }
-  }, [aActive, aDescription, aInstructions, aMaxAttempts, aPassPercentage, aSchema, aTimeLimit, aTitle, editingAssessmentId, loadAssessments, token]);
+  }, [aActive, aDescription, aInstructions, aMaxAttempts, aPassPercentage, aQuestions, aTimeLimit, aTitle, editingAssessmentId, loadAssessments, token]);
 
   const loadAttempts = useCallback(async (assessment: Assessment) => {
     setBusy(true);
@@ -583,7 +783,146 @@ export default function LearnPage() {
                 <input className="rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm" value={aTimeLimit} onChange={(e) => setATimeLimit(e.target.value)} placeholder="Time (min)" />
                 <input className="rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm" value={aPassPercentage} onChange={(e) => setAPassPercentage(e.target.value)} placeholder="Pass %" />
               </div>
-              <textarea className="w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-xs min-h-48 font-mono" value={aSchema} onChange={(e) => setASchema(e.target.value)} />
+              <div className="rounded-xl border border-foreground/10 p-3 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground/70">Questions</h3>
+                  <div className="flex gap-2">
+                    <button type="button" className="rounded-lg border border-foreground/20 px-2.5 py-1 text-xs font-semibold" onClick={() => addQuestion('section')}>
+                      + Section
+                    </button>
+                    <button type="button" className="rounded-lg border border-foreground/20 px-2.5 py-1 text-xs font-semibold" onClick={() => addQuestion('single_choice')}>
+                      + Question
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-foreground/60">
+                  Build assessments like Google Forms. Add section headings, required questions, scoring, and dependency rules.
+                </p>
+                <div className="space-y-3 max-h-[520px] overflow-auto pr-1">
+                  {aQuestions.map((q, idx) => {
+                    const dependencyChoices = aQuestions
+                      .slice(0, idx)
+                      .filter((item) => item.type !== 'section')
+                      .map((item) => ({ id: item.id, label: item.label || item.id }));
+                    return (
+                      <div key={q.key} className="rounded-xl border border-foreground/15 bg-foreground/[0.02] p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-md bg-foreground/10 px-2 py-1 text-[11px] font-semibold">#{idx + 1}</span>
+                          <input
+                            className="w-24 rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs"
+                            value={q.id}
+                            onChange={(e) => updateQuestion(q.key, { id: e.target.value })}
+                            placeholder={`q${idx + 1}`}
+                          />
+                          <select
+                            className="flex-1 rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs"
+                            value={q.type}
+                            onChange={(e) => {
+                              const nextType = e.target.value as BuilderQuestionType;
+                              updateQuestion(q.key, {
+                                type: nextType,
+                                required: nextType === 'section' ? false : q.required,
+                                points: nextType === 'section' ? '0' : q.points || '1',
+                              });
+                            }}
+                          >
+                            {QUESTION_TYPE_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            className="rounded-md border border-red-400/40 px-2 py-1 text-xs font-semibold text-red-300"
+                            onClick={() => removeQuestion(q.key)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        <input
+                          className="w-full rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs"
+                          value={q.label}
+                          onChange={(e) => updateQuestion(q.key, { label: e.target.value })}
+                          placeholder={q.type === 'section' ? 'Section title' : 'Question text'}
+                        />
+
+                        {q.type !== 'section' ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <label className="flex items-center gap-2 text-xs text-foreground/70">
+                              <input
+                                type="checkbox"
+                                checked={q.required}
+                                onChange={(e) => updateQuestion(q.key, { required: e.target.checked })}
+                              />
+                              Required
+                            </label>
+                            <input
+                              className="rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs"
+                              value={q.points}
+                              onChange={(e) => updateQuestion(q.key, { points: e.target.value })}
+                              placeholder="Points"
+                            />
+                          </div>
+                        ) : null}
+
+                        {(q.type === 'single_choice' || q.type === 'multiple_choice') ? (
+                          <textarea
+                            className="w-full rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs min-h-20"
+                            value={q.optionsText}
+                            onChange={(e) => updateQuestion(q.key, { optionsText: e.target.value })}
+                            placeholder="One option per line"
+                          />
+                        ) : null}
+
+                        {q.type !== 'section' ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <select
+                              className="rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs"
+                              value={q.dependsOnQuestionId}
+                              onChange={(e) => updateQuestion(q.key, { dependsOnQuestionId: e.target.value })}
+                            >
+                              <option value="">No dependency</option>
+                              {dependencyChoices.map((dep) => (
+                                <option key={dep.id} value={dep.id}>
+                                  {dep.id} · {dep.label}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              className="rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs"
+                              value={q.dependsOnValueText}
+                              onChange={(e) => updateQuestion(q.key, { dependsOnValueText: e.target.value })}
+                              placeholder="Show when value (comma separated)"
+                              disabled={!q.dependsOnQuestionId}
+                            />
+                          </div>
+                        ) : null}
+
+                        {q.type !== 'section' ? (
+                          q.type === 'boolean' ? (
+                            <select
+                              className="w-full rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs"
+                              value={q.correctAnswerText}
+                              onChange={(e) => updateQuestion(q.key, { correctAnswerText: e.target.value })}
+                            >
+                              <option value="">No auto-evaluation answer</option>
+                              <option value="true">true / yes</option>
+                              <option value="false">false / no</option>
+                            </select>
+                          ) : (
+                            <input
+                              className="w-full rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs"
+                              value={q.correctAnswerText}
+                              onChange={(e) => updateQuestion(q.key, { correctAnswerText: e.target.value })}
+                              placeholder={q.type === 'multiple_choice' ? 'Correct answers (comma separated)' : 'Correct answer (optional)'}
+                            />
+                          )
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
               <label className="flex items-center gap-2 text-xs text-foreground/80">
                 <input type="checkbox" checked={aActive} onChange={(e) => setAActive(e.target.checked)} />
                 Active
@@ -637,7 +976,7 @@ export default function LearnPage() {
                                   setAMaxAttempts(String(a.maxAttempts));
                                   setATimeLimit(a.timeLimitMinutes == null ? '' : String(a.timeLimitMinutes));
                                   setAPassPercentage(String(a.passPercentage));
-                                  setASchema(JSON.stringify(a.questionSchema, null, 2));
+                                  setAQuestions(schemaToBuilder(a.questionSchema));
                                   setAActive(Boolean(a.active));
                                 }}
                               >
