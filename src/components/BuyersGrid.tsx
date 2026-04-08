@@ -17,6 +17,7 @@ export type BuyerRow = {
   phone: string | null;
   email: string | null;
   displayName: string | null;
+  bulkCsvEnabled?: boolean;
   createdAt: string;
 };
 
@@ -137,6 +138,44 @@ export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
     }
   };
 
+  const runBulkCsvAccessUpdate = async (enabled: boolean) => {
+    if (!gridApi) return;
+    const selected = gridApi.getSelectedRows();
+    if (!selected.length) {
+      alert('Select at least one buyer.');
+      return;
+    }
+    const userIds = Array.from(
+      new Set(
+        selected
+          .map((r) => (typeof r.id === 'string' ? r.id.trim() : ''))
+          .filter((id) => UUID_RE.test(id)),
+      ),
+    );
+    if (!userIds.length) {
+      alert('Selected rows do not contain valid buyer IDs.');
+      return;
+    }
+    const res = await apiFetch<{ requested: number; succeeded: number; failed: number; failures: { id: string; message: string }[] }>(
+      '/api/v1/admin/buyers/bulk-csv-access',
+      { method: 'POST', body: JSON.stringify({ userIds, enabled }) },
+      state.accessToken,
+    );
+    if (!res.ok) {
+      alert(`CSV access update failed (${res.status || 'network'})`);
+      return;
+    }
+    const ids = new Set(userIds);
+    const updated = selected.filter((row) => ids.has(row.id)).map((row) => ({ ...row, bulkCsvEnabled: enabled }));
+    gridApi.applyTransaction({ update: updated });
+    const msg = `${enabled ? 'Enabled' : 'Disabled'} CSV bulk upload for ${res.data.succeeded}/${res.data.requested} buyers.`;
+    if (res.data.failed > 0) {
+      alert(`${msg} Failed: ${res.data.failed}`);
+    } else {
+      alert(msg);
+    }
+  };
+
   const columnDefs = useMemo<ColDef<BuyerRow>[]>(
     () => [
       {
@@ -168,6 +207,12 @@ export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
         field: 'status',
         width: 120,
         cellRenderer: StatusRenderer,
+      },
+      {
+        headerName: 'CSV Bulk',
+        field: 'bulkCsvEnabled',
+        width: 120,
+        valueFormatter: (p) => (p.value ? 'ENABLED' : 'DISABLED'),
       },
       {
         headerName: 'Created',
@@ -214,6 +259,20 @@ export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
             className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10"
           >
             Bulk Set BLOCKED
+          </button>
+          <button
+            type="button"
+            onClick={() => void runBulkCsvAccessUpdate(true)}
+            className="rounded-lg border border-sky-500/30 px-3 py-2 text-xs font-semibold text-sky-400 hover:bg-sky-500/10"
+          >
+            Enable CSV Bulk
+          </button>
+          <button
+            type="button"
+            onClick={() => void runBulkCsvAccessUpdate(false)}
+            className="rounded-lg border border-slate-500/30 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-500/10"
+          >
+            Disable CSV Bulk
           </button>
         </div>
       )}

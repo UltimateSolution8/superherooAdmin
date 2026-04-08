@@ -58,6 +58,20 @@ type Attempt = {
   createdAt?: string | null;
 };
 
+type HelperOption = {
+  id: string;
+  displayName?: string | null;
+  phone?: string | null;
+  status?: string | null;
+};
+
+type AssessmentAssignment = {
+  assessmentId: string;
+  assignAll: boolean;
+  assignedCount: number;
+  helperIds: string[];
+};
+
 type UploadedAsset = {
   url: string;
   contentType?: string | null;
@@ -261,11 +275,25 @@ export default function LearnPage() {
   const [aActive, setAActive] = useState(true);
   const [attemptRows, setAttemptRows] = useState<Attempt[]>([]);
   const [attemptAssessmentTitle, setAttemptAssessmentTitle] = useState<string | null>(null);
+  const [helperOptions, setHelperOptions] = useState<HelperOption[]>([]);
+  const [assignmentAssessmentId, setAssignmentAssessmentId] = useState<string | null>(null);
+  const [assignmentAssessmentTitle, setAssignmentAssessmentTitle] = useState<string | null>(null);
+  const [assignmentAll, setAssignmentAll] = useState(true);
+  const [assignmentHelperIds, setAssignmentHelperIds] = useState<string[]>([]);
 
   const clearAlerts = () => {
     setError(null);
     setNotice(null);
   };
+
+  const helperLabel = useCallback((helper: HelperOption) => {
+    const name = helper.displayName?.trim();
+    const phone = helper.phone?.trim();
+    if (name && phone) return `${name} (${phone})`;
+    if (name) return name;
+    if (phone) return phone;
+    return helper.id;
+  }, []);
 
   const resetMaterialForm = () => {
     setEditingMaterialId(null);
@@ -411,6 +439,78 @@ export default function LearnPage() {
       setBusy(false);
     }
   }, [token]);
+
+  const loadHelperOptions = useCallback(async () => {
+    const res = await apiFetch<HelperOption[]>('/api/v1/admin/helpers', undefined, token);
+    if (!res.ok) {
+      setError(res.errorText);
+      return;
+    }
+    const activeHelpers = (res.data ?? [])
+      .filter((helper) => String(helper.status || '').toUpperCase() === 'ACTIVE')
+      .sort((a, b) => helperLabel(a).localeCompare(helperLabel(b)));
+    setHelperOptions(activeHelpers);
+  }, [helperLabel, token]);
+
+  const openAssignmentEditor = useCallback(async (assessment: Assessment) => {
+    clearAlerts();
+    setBusy(true);
+    try {
+      if (!helperOptions.length) {
+        await loadHelperOptions();
+      }
+      const res = await apiFetch<AssessmentAssignment>(
+        `/api/v1/admin/learn/assessments/${assessment.id}/assignments`,
+        undefined,
+        token,
+      );
+      if (!res.ok) {
+        setError(res.errorText);
+        return;
+      }
+      setAssignmentAssessmentId(assessment.id);
+      setAssignmentAssessmentTitle(assessment.title);
+      setAssignmentAll(Boolean(res.data.assignAll));
+      setAssignmentHelperIds(Array.isArray(res.data.helperIds) ? res.data.helperIds : []);
+      setNotice(Boolean(res.data.assignAll)
+        ? `"${assessment.title}" is assigned to all helpers.`
+        : `"${assessment.title}" is assigned to ${res.data.assignedCount} helper(s).`);
+    } finally {
+      setBusy(false);
+    }
+  }, [helperOptions.length, loadHelperOptions, token]);
+
+  const saveAssignments = useCallback(async () => {
+    if (!assignmentAssessmentId) return;
+    if (!assignmentAll && assignmentHelperIds.length === 0) {
+      setError('Select at least one helper or choose "Assign to all helpers".');
+      return;
+    }
+    clearAlerts();
+    setBusy(true);
+    try {
+      const payload = {
+        assignAll: assignmentAll,
+        helperIds: assignmentAll ? [] : assignmentHelperIds,
+      };
+      const res = await apiFetch<AssessmentAssignment>(
+        `/api/v1/admin/learn/assessments/${assignmentAssessmentId}/assignments`,
+        { method: 'POST', body: JSON.stringify(payload) },
+        token,
+      );
+      if (!res.ok) {
+        setError(res.errorText);
+        return;
+      }
+      setAssignmentAll(Boolean(res.data.assignAll));
+      setAssignmentHelperIds(Array.isArray(res.data.helperIds) ? res.data.helperIds : []);
+      setNotice(Boolean(res.data.assignAll)
+        ? 'Assessment is now assigned to all helpers.'
+        : `Assessment assigned to ${res.data.assignedCount} selected helper(s).`);
+    } finally {
+      setBusy(false);
+    }
+  }, [assignmentAll, assignmentAssessmentId, assignmentHelperIds, token]);
 
   const addQuestion = useCallback((type: BuilderQuestionType = 'single_choice') => {
     setAQuestions((prev) => [...prev, makeQuestion(prev.length, type)]);
@@ -599,7 +699,12 @@ export default function LearnPage() {
               <button
                 key={k}
                 type="button"
-                onClick={() => setTab(k)}
+                onClick={() => {
+                  setTab(k);
+                  if (k === 'assessments') {
+                    void loadHelperOptions();
+                  }
+                }}
                 className={`rounded-lg px-3 py-2 text-xs font-semibold ${
                   tab === k
                     ? 'bg-foreground/10 text-foreground'
@@ -989,6 +1094,13 @@ export default function LearnPage() {
                               >
                                 Attempts
                               </button>
+                              <button
+                                type="button"
+                                className="rounded-md border border-sky-500/30 px-2 py-1 text-sky-300"
+                                onClick={() => void openAssignmentEditor(a)}
+                              >
+                                Assign
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -998,6 +1110,93 @@ export default function LearnPage() {
                   {!assessments.length ? <p className="py-6 text-sm text-foreground/60">No assessments found.</p> : null}
                 </div>
               </div>
+
+              {assignmentAssessmentId ? (
+                <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4 space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-sm font-semibold">
+                      Assignment • {assignmentAssessmentTitle || assignmentAssessmentId}
+                    </h2>
+                    <button
+                      type="button"
+                      className="ml-auto rounded-lg border border-foreground/20 px-3 py-1 text-xs"
+                      onClick={() => {
+                        setAssignmentAssessmentId(null);
+                        setAssignmentAssessmentTitle(null);
+                        setAssignmentAll(true);
+                        setAssignmentHelperIds([]);
+                      }}
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-foreground/70">
+                    Choose exactly who should receive this assessment in the partner app. If you keep
+                    "Assign to all helpers" enabled, every active helper can access it.
+                  </p>
+
+                  <label className="flex items-center gap-2 text-xs text-foreground/80">
+                    <input
+                      type="checkbox"
+                      checked={assignmentAll}
+                      onChange={(e) => setAssignmentAll(e.target.checked)}
+                    />
+                    Assign to all helpers
+                  </label>
+
+                  {!assignmentAll ? (
+                    <div className="rounded-xl border border-foreground/10 bg-background p-3">
+                      <div className="mb-2 text-xs text-foreground/65">
+                        Selected: {assignmentHelperIds.length}
+                      </div>
+                      <div className="max-h-48 overflow-auto space-y-1 pr-1">
+                        {helperOptions.map((helper) => {
+                          const checked = assignmentHelperIds.includes(helper.id);
+                          return (
+                            <label key={helper.id} className="flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-foreground/5">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => {
+                                  setAssignmentHelperIds((prev) => {
+                                    if (e.target.checked) {
+                                      return Array.from(new Set([...prev, helper.id]));
+                                    }
+                                    return prev.filter((id) => id !== helper.id);
+                                  });
+                                }}
+                              />
+                              <span>{helperLabel(helper)}</span>
+                            </label>
+                          );
+                        })}
+                        {!helperOptions.length ? (
+                          <p className="py-4 text-center text-xs text-foreground/60">No active helpers found.</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                      onClick={() => void saveAssignments()}
+                      disabled={busy}
+                    >
+                      Save Assignment
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg border border-foreground/20 px-3 py-2 text-xs font-semibold"
+                      onClick={() => void loadHelperOptions()}
+                    >
+                      Refresh Helpers
+                    </button>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="rounded-2xl border border-foreground/10 p-4 space-y-3">
                 <h2 className="text-sm font-semibold">
