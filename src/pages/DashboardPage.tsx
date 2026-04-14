@@ -111,7 +111,7 @@ export default function DashboardPage() {
           <section className="rounded-2xl border border-foreground/10 p-6">
             <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
             <div className="grid grid-cols-2 gap-3">
-              <ActionCard title="Video KYC" description="Review video KYC" href="/kyc/video" icon="🎥" />
+              <ActionCard title="Live KYC" description="Run live KYC sessions" href="/kyc/live" icon="📹" />
               <ActionCard title="Manage Tasks" description="View all tasks" href="/tasks" icon="📋" />
               <ActionCard title="All Helpers" description="Manage accounts" href="/helpers" icon="👥" />
               <ActionCard title="Support Tickets" description="Handle inquiries" href="/support/tickets" icon="💬" />
