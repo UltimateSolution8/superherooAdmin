@@ -101,7 +101,7 @@ export default function LiveKycPage() {
       zp.joinRoom({
         container: containerRef.current,
         scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
-        showPreJoinView: false,
+        showPreJoinView: true,
         turnOnCameraWhenJoining: true,
         showRoomTimer: true,
       });
