@@ -38,7 +38,7 @@ export function Nav() {
             className="rounded-lg border border-foreground/15 px-3 py-2 text-xs font-medium text-foreground/70 hover:text-foreground hover:bg-foreground/5"
             href="/Superherooo-Pitch-Deck.pdf"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
           >
             📘 Pitch Deck
           </a>

@@ -22,7 +22,15 @@ export default function LiveKycJoinPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const cfg = window.__LIVE_KYC__;
+    const params = new URLSearchParams(window.location.search);
+    const cfg = window.__LIVE_KYC__ || {
+      appId: Number(params.get('appId')),
+      roomId: params.get('roomId'),
+      token: params.get('token'),
+      userId: params.get('userId'),
+      userName: params.get('userName') || '',
+      role: params.get('role') || '',
+    };
     if (!cfg || !cfg.appId || !cfg.token || !cfg.roomId || !cfg.userId) {
       setError('Missing live KYC session.');
       return;
@@ -41,7 +49,7 @@ export default function LiveKycJoinPage() {
       zp.joinRoom({
         container: containerRef.current,
         scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
-        showPreJoinView: false,
+        showPreJoinView: true,
         turnOnCameraWhenJoining: true,
         showRoomTimer: true,
       });

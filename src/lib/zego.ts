@@ -45,6 +45,10 @@ function parseProxyHost(value: string): string | null {
 }
 
 function zegoProxyHosts(): string[] {
+  const defaults = [
+    'webliveroom1400407177-api.coolzcloud.com',
+    'webliveroom1400407177-api-bak.coolzcloud.com',
+  ];
   const fromEnv = [
     import.meta.env.VITE_ZEGO_WS_PRIMARY as string | undefined,
     import.meta.env.VITE_ZEGO_WS_SECONDARY as string | undefined,
@@ -52,7 +56,7 @@ function zegoProxyHosts(): string[] {
     .map((v) => (v ? parseProxyHost(v) : null))
     .filter((v): v is string => Boolean(v));
 
-  return fromEnv;
+  return fromEnv.length > 0 ? fromEnv : defaults;
 }
 
 export function buildKitToken(input: LiveSessionTokenInput): string {

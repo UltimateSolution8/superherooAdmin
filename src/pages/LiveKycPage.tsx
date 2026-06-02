@@ -45,25 +45,40 @@ export default function LiveKycPage() {
   const [sessionBusy, setSessionBusy] = useState(false);
   const [approveBusy, setApproveBusy] = useState(false);
   const [snapshots, setSnapshots] = useState<Record<string, string>>({});
+  const [queueNotice, setQueueNotice] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const zegoRef = useRef<any>(null);
+  const lastPendingCountRef = useRef<number | null>(null);
+
+  const loadPendingHelpers = useCallback(async (showPopup: boolean) => {
+    const res = await apiFetch<PendingHelperRow[]>(
+      '/api/v1/admin/helpers/pending',
+      undefined,
+      state.accessToken,
+    );
+    if (res.ok && Array.isArray(res.data)) {
+      setHelpers(res.data);
+      const previous = lastPendingCountRef.current;
+      if (showPopup && previous != null && res.data.length > previous) {
+        setQueueNotice(`${res.data.length - previous} new KYC request(s) entered the queue.`);
+      }
+      lastPendingCountRef.current = res.data.length;
+    } else {
+      setError(res.errorText);
+    }
+  }, [state.accessToken]);
 
   useEffect(() => {
     let active = true;
-    (async () => {
-      const res = await apiFetch<PendingHelperRow[]>(
-        '/api/v1/admin/helpers/pending',
-        undefined,
-        state.accessToken,
-      );
-      if (!active) return;
-      if (res.ok && Array.isArray(res.data)) setHelpers(res.data);
-      else setError(res.errorText);
-    })();
+    loadPendingHelpers(false).catch((e) => active && setError(e?.message || 'Could not load pending KYC.'));
+    const timer = window.setInterval(() => {
+      if (active) loadPendingHelpers(true).catch(() => undefined);
+    }, 30_000);
     return () => {
       active = false;
+      window.clearInterval(timer);
     };
-  }, [state.accessToken]);
+  }, [loadPendingHelpers]);
 
   useEffect(() => {
     if (!session || !containerRef.current) return;
@@ -86,7 +101,7 @@ export default function LiveKycPage() {
       zp.joinRoom({
         container: containerRef.current,
         scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
-        showPreJoinView: false,
+        showPreJoinView: true,
         turnOnCameraWhenJoining: true,
         showRoomTimer: true,
       });
@@ -257,6 +272,12 @@ export default function LiveKycPage() {
           <p className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400">
             {error}
           </p>
+        ) : null}
+        {queueNotice ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+            <button className="float-right text-xs opacity-70 hover:opacity-100" onClick={() => setQueueNotice(null)}>Dismiss</button>
+            {queueNotice}
+          </div>
         ) : null}
         <DataGrid<PendingHelperRow>
           rowData={helpers}
