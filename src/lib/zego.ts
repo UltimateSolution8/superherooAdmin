@@ -46,8 +46,8 @@ function parseProxyHost(value: string): string | null {
 
 function zegoProxyHosts(): string[] {
   const defaults = [
-    'webliveroom1400407177-api.coolzcloud.com',
-    'webliveroom1400407177-api-bak.coolzcloud.com',
+    'webliveroom1860318111-api.coolzcloud.com',
+    'webliveroom1860318111-api-bak.coolzcloud.com',
   ];
   const fromEnv = [
     import.meta.env.VITE_ZEGO_WS_PRIMARY as string | undefined,
