@@ -33,32 +33,6 @@ function decodeUserName(value?: string | null): string {
   }
 }
 
-function parseProxyHost(value: string): string | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  try {
-    const withProtocol = /^wss?:\/\//i.test(trimmed) ? trimmed : `wss://${trimmed}`;
-    return new URL(withProtocol).hostname || null;
-  } catch {
-    return null;
-  }
-}
-
-function zegoProxyHosts(): string[] {
-  const defaults = [
-    'webliveroom1860318111-api.coolzcloud.com',
-    'webliveroom1860318111-api-bak.coolzcloud.com',
-  ];
-  const fromEnv = [
-    import.meta.env.VITE_ZEGO_WS_PRIMARY as string | undefined,
-    import.meta.env.VITE_ZEGO_WS_SECONDARY as string | undefined,
-  ]
-    .map((v) => (v ? parseProxyHost(v) : null))
-    .filter((v): v is string => Boolean(v));
-
-  return fromEnv.length > 0 ? fromEnv : defaults;
-}
-
 export function buildKitToken(input: LiveSessionTokenInput): string {
   const raw = (input.token || '').trim();
   if (!raw) throw new Error('missing_token');
@@ -100,13 +74,8 @@ export function buildKitToken(input: LiveSessionTokenInput): string {
 }
 
 export function createZego(kitToken: string) {
-  const hosts = zegoProxyHosts();
-  if (hosts.length === 0) {
-    return ZegoUIKitPrebuilt.create(kitToken);
-  }
-  return ZegoUIKitPrebuilt.create(kitToken, {
-    cloudProxyConfig: {
-      proxyList: hosts.map((hostName) => ({ hostName })),
-    },
-  });
+  // Do not pass cloudProxyConfig here. Zego's UIKit treats those hosts as a
+  // proxy service and appends /proxy/ws, while this project receives standard
+  // Web SDK room hosts from Zego. Let the SDK resolve the correct room server.
+  return ZegoUIKitPrebuilt.create(kitToken);
 }
