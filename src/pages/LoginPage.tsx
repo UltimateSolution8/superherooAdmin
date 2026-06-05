@@ -82,14 +82,6 @@ export default function LoginPage() {
               <div className="text-lg font-semibold">Superheroo Admin</div>
             </div>
           </div>
-          <a
-            href="/Superherooo-Pitch-Deck.pdf"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-foreground/15 px-3 py-2 text-xs font-semibold text-foreground/75 hover:bg-foreground/5"
-          >
-            📘 Open Superherooo Pitch Deck
-          </a>
           <h1 className="text-2xl font-semibold tracking-tight">Sign in with email</h1>
           {error && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-300">
@@ -124,14 +116,6 @@ export default function LoginPage() {
             <h2 className="text-xl font-semibold">Sign in with OTP</h2>
             <span className="text-xs text-foreground/50">Admin only</span>
           </div>
-          <a
-            href="/Superherooo-Pitch-Deck.pdf"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-foreground/15 px-3 py-2 text-xs font-semibold text-foreground/75 hover:bg-foreground/5"
-          >
-            📘 Pitch Deck (new tab)
-          </a>
           {step === 'start' ? (
             <form className="space-y-3" onSubmit={handleStartOtp}>
               <input
