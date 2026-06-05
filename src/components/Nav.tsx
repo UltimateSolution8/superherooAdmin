@@ -15,9 +15,21 @@ const navItems = [
 ];
 
 export function Nav() {
-  const { logout } = useAuth();
+  const { logout, state } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const role = state.user?.role || 'ADMIN';
+  const allowedNavItems = navItems.filter((item) => {
+    if (role === 'ADMIN') return true;
+    if (role === 'KYC') {
+      return ['/kyc/live', '/helpers/pending', '/signup', '/'].includes(item.href);
+    }
+    if (role === 'SUPPORT') {
+      return ['/support/tickets', '/tasks', '/buyers', '/helpers', '/'].includes(item.href);
+    }
+    return false;
+  });
 
   return (
     <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-foreground/8">
@@ -34,15 +46,7 @@ export function Nav() {
           </div>
         </Link>
         <div className="flex flex-wrap items-center gap-1">
-          <a
-            className="rounded-lg border border-foreground/15 px-3 py-2 text-xs font-medium text-foreground/70 hover:text-foreground hover:bg-foreground/5"
-            href="/Superherooo-Pitch-Deck.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            📘 Pitch Deck
-          </a>
-          {navItems.map((item) => {
+          {allowedNavItems.map((item) => {
             const active = location.pathname === item.href;
             return (
               <Link
