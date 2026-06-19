@@ -17,6 +17,7 @@ import LiveKycPage from './LiveKycPage';
 import LiveKycJoinPage from './LiveKycJoinPage';
 import BulkRequestsPage from './BulkRequestsPage';
 import LearnPage from './LearnPage';
+import SendNotificationsPage from './SendNotificationsPage';
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { state } = useAuth();
@@ -165,6 +166,14 @@ export default function App() {
           element={
             <Protected>
               <LearnPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/notifications/send"
+          element={
+            <Protected>
+              <SendNotificationsPage />
             </Protected>
           }
         />

@@ -11,6 +11,7 @@ const navItems = [
   { label: 'Bulk Requests', href: '/bulk-requests', icon: '🧾' },
   { label: 'Learn', href: '/learn', icon: '🎓' },
   { label: 'Support', href: '/support/tickets', icon: '💬' },
+  { label: 'Notifications', href: '/notifications/send', icon: '📢' },
   { label: 'Create User', href: '/signup', icon: '➕' },
 ];
 
