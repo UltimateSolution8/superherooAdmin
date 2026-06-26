@@ -3,6 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import type { ColDef, GridReadyEvent, GridApi } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from 'ag-grid-community';
 import * as XLSX from 'xlsx';
+// @ts-ignore
 import { saveAs } from 'file-saver';
 
 ModuleRegistry.registerModules([AllCommunityModule]);

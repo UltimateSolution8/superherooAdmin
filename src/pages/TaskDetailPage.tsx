@@ -33,6 +33,8 @@ type TaskDetail = {
   completionSelfieLng: number | null;
   completionSelfieAddress: string | null;
   completionSelfieCapturedAt: string | null;
+  arrivalOtp?: string | null;
+  completionOtp?: string | null;
   createdAt: string;
 };
 
@@ -132,7 +134,17 @@ export default function TaskDetailPage() {
               <div className="text-xs text-foreground/60">Created</div>
               <div className="text-sm">{new Date(task.createdAt).toLocaleString()}</div>
             </div>
-            <div>
+            <div className="grid grid-cols-2 gap-4 border-t border-foreground/5 pt-3">
+              <div>
+                <div className="text-xs text-foreground/60">Arrival OTP</div>
+                <div className="text-sm font-mono font-semibold text-blue-400">{task.arrivalOtp ?? '-'}</div>
+              </div>
+              <div>
+                <div className="text-xs text-foreground/60">Completion OTP</div>
+                <div className="text-sm font-mono font-semibold text-blue-400">{task.completionOtp ?? '-'}</div>
+              </div>
+            </div>
+            <div className="border-t border-foreground/5 pt-3">
               <div className="text-xs text-foreground/60">Arrival selfie</div>
               {task.arrivalSelfieUrl ? (
                 <a className="text-sm underline" href={task.arrivalSelfieUrl} target="_blank" rel="noreferrer">Open</a>

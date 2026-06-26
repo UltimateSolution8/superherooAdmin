@@ -14,8 +14,11 @@ export default function TasksPage() {
     (async () => {
       const res = await apiFetch<TaskRow[]>('/api/v1/admin/tasks', undefined, state.accessToken);
       if (!active) return;
-      if (res.ok && Array.isArray(res.data)) setTasks(res.data);
-      else setError(res.errorText);
+      if (res.ok) {
+        setTasks(res.data);
+      } else {
+        setError(res.errorText);
+      }
     })();
     return () => {
       active = false;

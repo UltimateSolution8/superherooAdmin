@@ -22,8 +22,11 @@ export default function HelpersPage() {
     (async () => {
       const res = await apiFetch<HelperRow[]>('/api/v1/admin/helpers', undefined, state.accessToken);
       if (!active) return;
-      if (res.ok && Array.isArray(res.data)) setHelpers(res.data);
-      else setError(res.errorText);
+      if (res.ok) {
+        setHelpers(res.data);
+      } else {
+        setError(res.errorText);
+      }
     })();
     return () => {
       active = false;

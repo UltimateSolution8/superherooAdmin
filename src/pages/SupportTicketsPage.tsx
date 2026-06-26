@@ -37,8 +37,11 @@ export default function SupportTicketsPage() {
     (async () => {
       const res = await apiFetch<Ticket[]>(`/api/v1/admin/support/tickets${query}`, undefined, state.accessToken);
       if (!active) return;
-      if (res.ok && Array.isArray(res.data)) setTickets(res.data);
-      else setError(res.errorText);
+      if (res.ok) {
+        setTickets(res.data);
+      } else {
+        setError(res.errorText);
+      }
     })();
     return () => {
       active = false;
