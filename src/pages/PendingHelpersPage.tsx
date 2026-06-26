@@ -18,8 +18,11 @@ export default function PendingHelpersPage() {
         state.accessToken,
       );
       if (!active) return;
-      if (res.ok && Array.isArray(res.data)) setHelpers(res.data);
-      else setError(res.errorText);
+      if (res.ok) {
+        setHelpers(res.data);
+      } else {
+        setError(res.errorText);
+      }
     })();
     return () => {
       active = false;

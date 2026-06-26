@@ -56,13 +56,14 @@ export default function LiveKycPage() {
       undefined,
       state.accessToken,
     );
-    if (res.ok && Array.isArray(res.data)) {
-      setHelpers(res.data);
+    if (res.ok) {
+      const data = res.data || [];
+      setHelpers(data);
       const previous = lastPendingCountRef.current;
-      if (showPopup && previous != null && res.data.length > previous) {
-        setQueueNotice(`${res.data.length - previous} new KYC request(s) entered the queue.`);
+      if (showPopup && previous != null && data.length > previous) {
+        setQueueNotice(`${data.length - previous} new KYC request(s) entered the queue.`);
       }
-      lastPendingCountRef.current = res.data.length;
+      lastPendingCountRef.current = data.length;
     } else {
       setError(res.errorText);
     }

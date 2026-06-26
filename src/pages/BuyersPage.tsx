@@ -22,8 +22,11 @@ export default function BuyersPage() {
     (async () => {
       const res = await apiFetch<BuyerRow[]>('/api/v1/admin/buyers', undefined, state.accessToken);
       if (!active) return;
-      if (res.ok && Array.isArray(res.data)) setBuyers(res.data);
-      else setError(res.errorText);
+      if (res.ok) {
+        setBuyers(res.data);
+      } else {
+        setError(res.errorText);
+      }
     })();
     return () => {
       active = false;
