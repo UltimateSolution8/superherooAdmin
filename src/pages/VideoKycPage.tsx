@@ -89,7 +89,7 @@ export default function VideoKycPage() {
 
   const columnDefs = useMemo<ColDef<VideoKycRow>[]>(
     () => [
-      { headerName: 'Helper', field: 'helperName', flex: 1, minWidth: 140 },
+      { headerName: 'Superherooo', field: 'helperName', flex: 1, minWidth: 140 },
       { headerName: 'Status', field: 'status', width: 120 },
       {
         headerName: 'Video',
@@ -157,7 +157,7 @@ export default function VideoKycPage() {
           rowData={rows}
           columnDefs={columnDefs}
           title="Video KYC"
-          subtitle="Review helper video KYC submissions."
+          subtitle="Review superherooo video KYC submissions."
           height={640}
           dateField="createdAt"
           exportFileName="superheroo-video-kyc.xlsx"

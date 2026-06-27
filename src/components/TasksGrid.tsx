@@ -146,13 +146,13 @@ export function TasksGrid({ tasks }: { tasks: TaskRow[] }) {
         valueFormatter: (p) => p.value != null ? `₹${(Number(p.value) / 100).toFixed(0)}` : '-',
       },
       {
-        headerName: 'Buyer',
+        headerName: 'Citizen',
         field: 'buyerName',
         width: 160,
         valueGetter: (p) => p.data?.buyerName || p.data?.buyerPhone || '-',
       },
       {
-        headerName: 'Helper',
+        headerName: 'Superherooo',
         field: 'helperName',
         width: 160,
         valueGetter: (p) => p.data?.helperName || p.data?.helperPhone || '-',

@@ -3,10 +3,10 @@ import { useAuth } from '../lib/auth';
 
 const navItems = [
   { label: 'Dashboard', href: '/', icon: '📊' },
-  { label: 'Helpers', href: '/helpers', icon: '👥' },
+  { label: 'Superherooos', href: '/helpers', icon: '👥' },
   { label: 'Pending', href: '/helpers/pending', icon: '⏳' },
   { label: 'Live KYC', href: '/kyc/live', icon: '📹' },
-  { label: 'Buyers', href: '/buyers', icon: '🛒' },
+  { label: 'Citizens', href: '/buyers', icon: '🛒' },
   { label: 'Tasks', href: '/tasks', icon: '📋' },
   { label: 'Bulk Requests', href: '/bulk-requests', icon: '🧾' },
   { label: 'Learn', href: '/learn', icon: '🎓' },

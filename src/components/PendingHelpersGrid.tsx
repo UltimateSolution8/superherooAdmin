@@ -190,7 +190,7 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
       rowData={helpers}
       columnDefs={columnDefs}
       title="Pending KYC"
-      subtitle="Review helper documents and approve/reject KYC."
+      subtitle="Review superherooo documents and approve/reject KYC."
       height={640}
       dateField="kycSubmittedAt"
       exportFileName="superheroo-pending-kyc.xlsx"

@@ -284,7 +284,7 @@ export default function LiveKycPage() {
           rowData={helpers}
           columnDefs={columnDefs}
           title="Live KYC"
-          subtitle="Start a live KYC session with a pending helper."
+          subtitle="Start a live KYC session with a pending superherooo."
           height={420}
           dateField="kycSubmittedAt"
           exportFileName="superheroo-live-kyc.xlsx"
