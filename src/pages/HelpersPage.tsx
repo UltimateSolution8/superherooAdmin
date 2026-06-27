@@ -80,7 +80,7 @@ export default function HelpersPage() {
         ) : null}
 
         <section className="rounded-2xl border border-foreground/10 p-5">
-          <h2 className="text-sm font-semibold mb-4">Add Helper</h2>
+          <h2 className="text-sm font-semibold mb-4">Add Superherooo</h2>
           <form onSubmit={handleCreate} className="grid gap-3 sm:grid-cols-5">
             <input
               name="phone"
@@ -119,7 +119,7 @@ export default function HelpersPage() {
               disabled={creating}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-60"
             >
-              {creating ? 'Creating…' : 'Create'}
+              {creating ? 'Creating…' : 'Create Superherooo'}
             </button>
           </form>
         </section>

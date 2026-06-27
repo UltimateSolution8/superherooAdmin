@@ -113,9 +113,9 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-3">
               <ActionCard title="Live KYC" description="Run live KYC sessions" href="/kyc/live" icon="📹" />
               <ActionCard title="Manage Tasks" description="View all tasks" href="/tasks" icon="📋" />
-              <ActionCard title="All Helpers" description="Manage accounts" href="/helpers" icon="👥" />
+              <ActionCard title="All Superherooos" description="Manage accounts" href="/helpers" icon="👥" />
               <ActionCard title="Support Tickets" description="Handle inquiries" href="/support/tickets" icon="💬" />
-              <ActionCard title="Buyers" description="Manage buyer accounts" href="/buyers" icon="🛒" />
+              <ActionCard title="Citizens" description="Manage citizen accounts" href="/buyers" icon="🛒" />
               <ActionCard title="Create User" description="Add new user" href="/signup" icon="➕" />
             </div>
           </section>

@@ -34,45 +34,10 @@ function StatusRenderer(params: ICellRendererParams<BuyerRow>) {
   return <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>{status}</span>;
 }
 
-function ActionRenderer(params: ICellRendererParams<BuyerRow>) {
-  const { data, api } = params;
+function ActionRenderer(params: ICellRendererParams<BuyerRow> & { onEdit: (b: BuyerRow) => void }) {
+  const { data, api, onEdit } = params;
   const { state } = useAuth();
   if (!data) return null;
-
-  const edit = async () => {
-    const displayName = prompt('Display name', data.displayName ?? '') ?? data.displayName ?? '';
-    const phoneInput = prompt('Phone', data.phone ?? '') ?? data.phone ?? '';
-    const emailInput = prompt('Email', data.email ?? '') ?? data.email ?? '';
-    const status = prompt('Status (ACTIVE/BLOCKED)', data.status) ?? data.status;
-    const phone = normalizeIndianPhoneOrNull(phoneInput);
-    const email = normalizeEmailOrNull(emailInput);
-    if (!validateIndianPhoneOrNull(phone)) {
-      alert('Enter a valid Indian mobile number.');
-      return;
-    }
-    if (!validateEmailOrNull(email)) {
-      alert('Enter a valid email address.');
-      return;
-    }
-    const res = await apiFetch<BuyerRow>(
-      `/api/v1/admin/buyers/${data.id}/update`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          displayName: displayName || null,
-          phone: phone || null,
-          email: email || null,
-          status: status || data.status,
-        }),
-      },
-      state.accessToken,
-    );
-    if (res.ok) {
-      api?.applyTransaction({ update: [res.data] });
-      return;
-    }
-    alert(`Failed to update buyer (${res.status || 'network'})`);
-  };
 
   const del = async () => {
     if (!confirm(`Delete buyer ${data.displayName || data.id}?`)) return;
@@ -90,8 +55,8 @@ function ActionRenderer(params: ICellRendererParams<BuyerRow>) {
 
   return (
     <div className="flex items-center gap-2">
-      <button onClick={edit} className="rounded-lg border border-foreground/15 px-3 py-1 text-xs">Edit</button>
-      <button onClick={del} className="rounded-lg border border-red-400/30 px-3 py-1 text-xs text-red-500">Delete</button>
+      <button onClick={() => onEdit(data)} className="rounded-lg border border-foreground/15 px-3 py-1 text-xs hover:bg-foreground/5 transition-colors">Edit</button>
+      <button onClick={del} className="rounded-lg border border-red-400/30 px-3 py-1 text-xs text-red-500 hover:bg-red-500/5 transition-colors">Delete</button>
     </div>
   );
 }
@@ -99,6 +64,100 @@ function ActionRenderer(params: ICellRendererParams<BuyerRow>) {
 export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
   const { state } = useAuth();
   const [gridApi, setGridApi] = useState<GridApi<BuyerRow> | null>(null);
+
+  // Edit Modal states
+  const [selectedBuyerForEdit, setSelectedBuyerForEdit] = useState<BuyerRow | null>(null);
+  const [editForm, setEditForm] = useState({ displayName: '', phone: '', email: '', status: 'ACTIVE' });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const openEditModal = (buyer: BuyerRow) => {
+    setSelectedBuyerForEdit(buyer);
+    setEditForm({
+      displayName: buyer.displayName ?? '',
+      phone: buyer.phone ?? '',
+      email: buyer.email ?? '',
+      status: buyer.status,
+    });
+    setEditError(null);
+    setSavingEdit(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedBuyerForEdit) return;
+    const phone = normalizeIndianPhoneOrNull(editForm.phone);
+    const email = normalizeEmailOrNull(editForm.email);
+    if (!validateIndianPhoneOrNull(phone)) {
+      setEditError('Enter a valid Indian mobile number.');
+      return;
+    }
+    if (!validateEmailOrNull(email)) {
+      setEditError('Enter a valid email address.');
+      return;
+    }
+    setSavingEdit(true);
+    setEditError(null);
+    const res = await apiFetch<BuyerRow>(
+      `/api/v1/admin/buyers/${selectedBuyerForEdit.id}/update`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          displayName: editForm.displayName || null,
+          phone: phone || null,
+          email: email || null,
+          status: editForm.status || selectedBuyerForEdit.status,
+        }),
+      },
+      state.accessToken,
+    );
+    setSavingEdit(false);
+    if (!res.ok) {
+      setEditError(res.errorText || 'Failed to update user.');
+      return;
+    }
+    gridApi?.applyTransaction({ update: [res.data] });
+    setSelectedBuyerForEdit(null);
+  };
+
+  const handleCellValueChanged = async (event: any) => {
+    const { data } = event;
+    if (!data) return;
+
+    const phone = normalizeIndianPhoneOrNull(data.phone);
+    const email = normalizeEmailOrNull(data.email);
+
+    if (data.phone && !validateIndianPhoneOrNull(phone)) {
+      alert('Enter a valid Indian mobile number.');
+      event.node.setDataValue('phone', event.oldValue);
+      return;
+    }
+    if (data.email && !validateEmailOrNull(email)) {
+      alert('Enter a valid email address.');
+      event.node.setDataValue('email', event.oldValue);
+      return;
+    }
+
+    const res = await apiFetch<BuyerRow>(
+      `/api/v1/admin/buyers/${data.id}/update`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          displayName: data.displayName || null,
+          phone: phone || null,
+          email: email || null,
+          status: data.status || 'ACTIVE',
+        }),
+      },
+      state.accessToken,
+    );
+
+    if (res.ok) {
+      event.node.setData(res.data);
+    } else {
+      alert(`Failed to update: ${res.errorText || 'network error'}`);
+      event.node.setDataValue(event.column.getColId(), event.oldValue);
+    }
+  };
 
   const runBulkStatusUpdate = async (status: 'ACTIVE' | 'BLOCKED') => {
     if (!gridApi) return;
@@ -199,14 +258,19 @@ export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
         cellClass: 'font-mono text-xs',
         valueFormatter: (p) => p.value ? `${(p.value as string).substring(0, 8)}…` : '-',
       },
-      { headerName: 'Display Name', field: 'displayName', flex: 1 },
-      { headerName: 'Phone', field: 'phone', width: 140 },
-      { headerName: 'Email', field: 'email', width: 180 },
+      { headerName: 'Display Name', field: 'displayName', flex: 1, editable: true },
+      { headerName: 'Phone', field: 'phone', width: 140, editable: true },
+      { headerName: 'Email', field: 'email', width: 180, editable: true },
       {
         headerName: 'Status',
         field: 'status',
         width: 120,
         cellRenderer: StatusRenderer,
+        editable: true,
+        cellEditor: 'agSelectCellEditor',
+        cellEditorParams: {
+          values: ['ACTIVE', 'BLOCKED'],
+        },
       },
       {
         headerName: 'CSV Bulk',
@@ -225,6 +289,9 @@ export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
         headerName: '',
         field: 'id',
         cellRenderer: ActionRenderer,
+        cellRendererParams: {
+          onEdit: openEditModal,
+        },
         filter: false,
         sortable: false,
         width: 150,
@@ -235,47 +302,115 @@ export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
   );
 
   return (
-    <DataGrid<BuyerRow>
-      rowData={buyers}
-      columnDefs={columnDefs}
-      title="Buyers"
-      subtitle="Manage buyer accounts and contact details."
-      height={640}
-      dateField="createdAt"
-      exportFileName="superheroo-buyers.xlsx"
-      onGridReady={(api) => setGridApi(api)}
-      extraContent={(
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void runBulkStatusUpdate('ACTIVE')}
-            className="rounded-lg border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10"
-          >
-            Bulk Set ACTIVE
-          </button>
-          <button
-            type="button"
-            onClick={() => void runBulkStatusUpdate('BLOCKED')}
-            className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10"
-          >
-            Bulk Set BLOCKED
-          </button>
-          <button
-            type="button"
-            onClick={() => void runBulkCsvAccessUpdate(true)}
-            className="rounded-lg border border-sky-500/30 px-3 py-2 text-xs font-semibold text-sky-400 hover:bg-sky-500/10"
-          >
-            Enable CSV Bulk
-          </button>
-          <button
-            type="button"
-            onClick={() => void runBulkCsvAccessUpdate(false)}
-            className="rounded-lg border border-slate-500/30 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-500/10"
-          >
-            Disable CSV Bulk
-          </button>
+    <div className="relative">
+      <DataGrid<BuyerRow>
+        rowData={buyers}
+        columnDefs={columnDefs}
+        title="Citizens"
+        subtitle="Manage citizen accounts and contact details. Double-click cells to edit inline."
+        height={640}
+        dateField="createdAt"
+        exportFileName="superheroo-citizens.xlsx"
+        onGridReady={(api) => setGridApi(api)}
+        onCellValueChanged={handleCellValueChanged}
+        extraContent={(
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void runBulkStatusUpdate('ACTIVE')}
+              className="rounded-lg border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+            >
+              Bulk Set ACTIVE
+            </button>
+            <button
+              type="button"
+              onClick={() => void runBulkStatusUpdate('BLOCKED')}
+              className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              Bulk Set BLOCKED
+            </button>
+            <button
+              type="button"
+              onClick={() => void runBulkCsvAccessUpdate(true)}
+              className="rounded-lg border border-sky-500/30 px-3 py-2 text-xs font-semibold text-sky-400 hover:bg-sky-500/10 transition-colors"
+            >
+              Enable CSV Bulk
+            </button>
+            <button
+              type="button"
+              onClick={() => void runBulkCsvAccessUpdate(false)}
+              className="rounded-lg border border-slate-500/30 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-500/10 transition-colors"
+            >
+              Disable CSV Bulk
+            </button>
+          </div>
+        )}
+      />
+
+      {/* Edit User Modal */}
+      {selectedBuyerForEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900 border border-foreground/10 space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold tracking-tight text-foreground">Edit Citizen</h3>
+              <p className="text-xs text-foreground/60">Update account details, phone number, and status.</p>
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground/60 uppercase">Display Name</label>
+                <input
+                  className="w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                  value={editForm.displayName}
+                  onChange={(e) => setEditForm({ ...editForm, displayName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground/60 uppercase">Phone</label>
+                <input
+                  className="w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground/60 uppercase">Email</label>
+                <input
+                  className="w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground/60 uppercase">Status</label>
+                <select
+                  className="w-full rounded-lg border border-foreground/15 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                >
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="BLOCKED">BLOCKED</option>
+                </select>
+              </div>
+            </div>
+            {editError && <p className="text-xs text-red-500 font-semibold">{editError}</p>}
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setSelectedBuyerForEdit(null)}
+                className="rounded-lg border border-foreground/15 px-4 py-2 text-sm font-semibold hover:bg-foreground/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={savingEdit}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60 transition-colors"
+              >
+                {savingEdit ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
-    />
+    </div>
   );
 }

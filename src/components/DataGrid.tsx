@@ -39,6 +39,7 @@ type Props<T> = {
   extraContent?: React.ReactNode;
   dateField?: keyof T;
   exportFileName?: string;
+  onCellValueChanged?: (event: any) => void;
 };
 
 export function DataGrid<T>({
@@ -55,6 +56,7 @@ export function DataGrid<T>({
   extraContent,
   dateField,
   exportFileName,
+  onCellValueChanged,
 }: Props<T>) {
   const gridRef = useRef<AgGridReact<T>>(null);
   const [filterText, setFilterText] = useState('');
@@ -186,6 +188,7 @@ export function DataGrid<T>({
           paginationPageSize={pageSize}
           paginationPageSizeSelector={[10, 25, 50, 100]}
           onGridReady={handleGridReady}
+          onCellValueChanged={onCellValueChanged}
           animateRows={true}
           domLayout={domLayout}
           suppressCellFocus={true}

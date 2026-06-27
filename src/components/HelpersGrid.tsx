@@ -230,11 +230,11 @@ export function HelpersGrid({ helpers }: { helpers: HelperRow[] }) {
     <DataGrid<HelperRow>
       rowData={helpers}
       columnDefs={columnDefs}
-      title="All Helpers"
-      subtitle="Manage helper accounts, contact details, and KYC status."
+      title="All Superherooos"
+      subtitle="Manage superherooo accounts, contact details, and KYC status."
       height={640}
       dateField="createdAt"
-      exportFileName="superheroo-helpers.xlsx"
+      exportFileName="superherooo-list.xlsx"
       onGridReady={(api) => setGridApi(api)}
       extraContent={(
         <div className="flex items-center gap-2">
