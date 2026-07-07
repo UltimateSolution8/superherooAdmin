@@ -113,6 +113,12 @@ function ActionRenderer(params: ICellRendererParams<HelperRow>) {
       >
         Delete
       </button>
+      <button
+        onClick={() => { window.location.href = `/kyc/live?helperId=${data.id}`; }}
+        className="rounded-lg border border-indigo-400/30 px-3 py-1 text-xs text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
+      >
+        Live KYC
+      </button>
     </div>
   );
 }

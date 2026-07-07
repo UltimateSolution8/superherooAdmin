@@ -46,9 +46,18 @@ export default function LiveKycPage() {
   const [approveBusy, setApproveBusy] = useState(false);
   const [snapshots, setSnapshots] = useState<Record<string, string>>({});
   const [queueNotice, setQueueNotice] = useState<string | null>(null);
+  const [manualHelperId, setManualHelperId] = useState('');
   const containerRef = useRef<HTMLDivElement | null>(null);
   const zegoRef = useRef<any>(null);
   const lastPendingCountRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const helperId = params.get('helperId');
+    if (helperId) {
+      startLive(helperId);
+    }
+  }, [startLive]);
 
   const loadPendingHelpers = useCallback(async (showPopup: boolean) => {
     const res = await apiFetch<PendingHelperRow[]>(
@@ -280,6 +289,26 @@ export default function LiveKycPage() {
             {queueNotice}
           </div>
         ) : null}
+        <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-foreground/10 bg-foreground/2 p-4">
+          <div className="flex-1 min-w-[280px] space-y-1">
+            <label className="text-xs font-semibold text-foreground/60">Start Live KYC by Helper ID</label>
+            <input
+              type="text"
+              placeholder="Enter helper UUID..."
+              value={manualHelperId}
+              onChange={(e) => setManualHelperId(e.target.value)}
+              className="w-full rounded-lg border border-foreground/15 bg-background px-3 py-1.5 text-sm outline-none focus:border-indigo-500"
+            />
+          </div>
+          <button
+            onClick={() => manualHelperId.trim() && startLive(manualHelperId.trim())}
+            disabled={!manualHelperId.trim() || sessionBusy}
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+          >
+            Start Live KYC
+          </button>
+        </div>
+
         <DataGrid<PendingHelperRow>
           rowData={helpers}
           columnDefs={columnDefs}
