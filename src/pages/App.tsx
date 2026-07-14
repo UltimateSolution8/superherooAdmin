@@ -7,6 +7,7 @@ import DashboardPage from './DashboardPage';
 import HelpersPage from './HelpersPage';
 import PendingHelpersPage from './PendingHelpersPage';
 import BuyersPage from './BuyersPage';
+import MediatorsPage from './MediatorsPage';
 import TasksPage from './TasksPage';
 import TaskDetailPage from './TaskDetailPage';
 import SupportTicketsPage from './SupportTicketsPage';
@@ -93,6 +94,14 @@ export default function App() {
           element={
             <Protected>
               <BuyersPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/mediators"
+          element={
+            <Protected>
+              <MediatorsPage />
             </Protected>
           }
         />

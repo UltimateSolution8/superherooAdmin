@@ -7,6 +7,7 @@ const navItems = [
   { label: 'Pending', href: '/helpers/pending', icon: '⏳' },
   { label: 'Live KYC', href: '/kyc/live', icon: '📹' },
   { label: 'Citizens', href: '/buyers', icon: '🛒' },
+  { label: 'Mediators', href: '/mediators', icon: '🧭' },
   { label: 'Tasks', href: '/tasks', icon: '📋' },
   { label: 'Bulk Requests', href: '/bulk-requests', icon: '🧾' },
   { label: 'Learn', href: '/learn', icon: '🎓' },
