@@ -51,14 +51,6 @@ export default function LiveKycPage() {
   const zegoRef = useRef<any>(null);
   const lastPendingCountRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const helperId = params.get('helperId');
-    if (helperId) {
-      startLive(helperId);
-    }
-  }, [startLive]);
-
   const loadPendingHelpers = useCallback(async (showPopup: boolean) => {
     const res = await apiFetch<PendingHelperRow[]>(
       '/api/v1/admin/helpers/pending',
@@ -148,6 +140,14 @@ export default function LiveKycPage() {
       setSessionBusy(false);
     }
   }, [state.accessToken]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const helperId = params.get('helperId');
+    if (helperId) {
+      startLive(helperId);
+    }
+  }, [startLive]);
 
   const endLive = useCallback(async () => {
     if (!session) return;
