@@ -18,6 +18,7 @@ type Summary = {
 
 export default function DashboardPage() {
   const { state } = useAuth();
+  const isSuperAdmin = state.user?.role === 'ADMIN';
   const [summary, setSummary] = useState<Summary | null>(null);
   const [recentTasks, setRecentTasks] = useState<Task[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -116,6 +117,7 @@ export default function DashboardPage() {
               <ActionCard title="All Superherooos" description="Manage accounts" href="/helpers" icon="👥" />
               <ActionCard title="Support Tickets" description="Handle inquiries" href="/support/tickets" icon="💬" />
               <ActionCard title="Citizens" description="Manage citizen accounts" href="/buyers" icon="🛒" />
+              {isSuperAdmin ? <ActionCard title="Mediators" description="Create and manage mediator accounts" href="/mediators" icon="🧭" /> : null}
               <ActionCard title="Create User" description="Add new user" href="/signup" icon="➕" />
             </div>
           </section>

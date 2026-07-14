@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Nav } from '../components/Nav';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/api';
@@ -13,8 +13,14 @@ type PreviewRow = {
 type BatchSummary = {
   id: string;
   title: string;
+  notes?: string | null;
   status: string;
   total: number;
+  requestedHelperCount?: number | null;
+  addedWorkerCount?: number | null;
+  auditNotes?: string | null;
+  batchStartOtp?: string | null;
+  batchCompletionOtp?: string | null;
   byTaskStatus: Record<string, number>;
   createdAt: string;
 };
@@ -154,6 +160,9 @@ export default function BulkRequestsPage() {
   const [actingItemId, setActingItemId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [auditStatus, setAuditStatus] = useState('PENDING_AUDIT');
+  const [auditRows, setAuditRows] = useState<BatchSummary[]>([]);
+  const [auditBusyId, setAuditBusyId] = useState<string | null>(null);
 
   const parsedLines = useMemo(() => {
     try {
@@ -209,6 +218,52 @@ export default function BulkRequestsPage() {
       setBusy(false);
     }
   }, [parsedLines, token]);
+
+  const loadAuditQueue = useCallback(async () => {
+    const res = await apiFetch<BatchSummary[]>(
+      `/api/v1/batches/mediator-audit?status=${encodeURIComponent(auditStatus)}`,
+      undefined,
+      token,
+    );
+    if (res.ok) setAuditRows(res.data ?? []);
+    else setError(res.errorText);
+  }, [auditStatus, token]);
+
+  useEffect(() => {
+    void loadAuditQueue();
+  }, [loadAuditQueue]);
+
+  const actOnAudit = useCallback(
+    async (row: BatchSummary, action: 'approve' | 'hold') => {
+      const notes =
+        action === 'hold'
+          ? window.prompt('Reason / missing details for hold', row.auditNotes || 'Need customer clarification')
+          : window.prompt('Approval notes', row.auditNotes || 'Verified by Customer Care');
+      if (action === 'hold' && !notes) return;
+      setAuditBusyId(row.id);
+      setError(null);
+      setNotice(null);
+      try {
+        const res = await apiFetch<BatchSummary>(
+          `/api/v1/batches/${row.id}/mediator-audit/${action}`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ notes: notes || undefined }),
+          },
+          token,
+        );
+        if (!res.ok) {
+          setError(res.errorText);
+          return;
+        }
+        setNotice(action === 'approve' ? 'Bulk request approved and released to mediators.' : 'Bulk request put on hold.');
+        await loadAuditQueue();
+      } finally {
+        setAuditBusyId(null);
+      }
+    },
+    [loadAuditQueue, token],
+  );
 
   const loadBatch = useCallback(
     async (idRaw?: string) => {
@@ -328,6 +383,82 @@ export default function BulkRequestsPage() {
         {notice ? (
           <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300">{notice}</p>
         ) : null}
+
+        <section className="space-y-4 rounded-2xl border border-foreground/10 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold">Customer Care Audit</h2>
+              <p className="text-xs text-foreground/60">Review mediator-routed bulk requests before they are released to mediator apps.</p>
+            </div>
+            <div className="flex gap-2">
+              <select
+                className="rounded-lg border border-foreground/15 bg-background px-3 py-2 text-xs"
+                value={auditStatus}
+                onChange={(e) => setAuditStatus(e.target.value)}
+              >
+                <option value="PENDING_AUDIT">Pending Audit</option>
+                <option value="ON_HOLD">On Hold</option>
+                <option value="PENDING_MEDIATOR">Released</option>
+              </select>
+              <button onClick={() => void loadAuditQueue()} className="rounded-lg border border-foreground/15 px-3 py-2 text-xs hover:bg-foreground/5">
+                Refresh
+              </button>
+            </div>
+          </div>
+          <div className="overflow-auto rounded-xl border border-foreground/10">
+            <table className="w-full text-sm">
+              <thead className="bg-foreground/5 text-foreground/70">
+                <tr>
+                  <th className="px-3 py-2 text-left">Request</th>
+                  <th className="px-3 py-2 text-left">Helpers</th>
+                  <th className="px-3 py-2 text-left">Status</th>
+                  <th className="px-3 py-2 text-left">Notes</th>
+                  <th className="px-3 py-2 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditRows.map((row) => {
+                  const rowBusy = auditBusyId === row.id;
+                  return (
+                    <tr key={row.id} className="border-t border-foreground/10">
+                      <td className="px-3 py-2">
+                        <div className="font-semibold">{row.title}</div>
+                        <div className="text-xs text-foreground/60">{row.id}</div>
+                        <div className="text-xs text-foreground/60">{new Date(row.createdAt).toLocaleString()}</div>
+                      </td>
+                      <td className="px-3 py-2">{row.addedWorkerCount || 0}/{row.requestedHelperCount || row.total || 0}</td>
+                      <td className="px-3 py-2">{row.status}</td>
+                      <td className="px-3 py-2">{row.auditNotes || row.notes || '-'}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            disabled={rowBusy || row.status === 'PENDING_MEDIATOR'}
+                            onClick={() => void actOnAudit(row, 'approve')}
+                            className="rounded-md border border-emerald-400/40 px-2 py-1 text-xs text-emerald-300 disabled:opacity-50"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            disabled={rowBusy || row.status === 'ON_HOLD'}
+                            onClick={() => void actOnAudit(row, 'hold')}
+                            className="rounded-md border border-amber-400/40 px-2 py-1 text-xs text-amber-300 disabled:opacity-50"
+                          >
+                            Put on Hold
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {auditRows.length === 0 ? (
+                  <tr>
+                    <td className="px-3 py-5 text-center text-foreground/60" colSpan={5}>No requests in this queue.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <section className="space-y-4 rounded-2xl border border-foreground/10 p-5">
           <h2 className="text-sm font-semibold">Create Batch</h2>
