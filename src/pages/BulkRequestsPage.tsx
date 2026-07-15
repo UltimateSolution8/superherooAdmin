@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { Nav } from '../components/Nav';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/api';
+import { DataGrid } from '../components/DataGrid';
 
 type PreviewRow = {
   lineNo: number;
@@ -233,13 +235,19 @@ export default function BulkRequestsPage() {
     void loadAuditQueue();
   }, [loadAuditQueue]);
 
+  const [selectedAuditRow, setSelectedAuditRow] = useState<BatchSummary | null>(null);
+  const [modalItems, setModalItems] = useState<BatchItem[]>([]);
+  const [modalItemsBusy, setModalItemsBusy] = useState(false);
+
   const actOnAudit = useCallback(
-    async (row: BatchSummary, action: 'approve' | 'hold') => {
+    async (row: BatchSummary, action: 'approve' | 'hold' | 'reject') => {
       const notes =
         action === 'hold'
           ? window.prompt('Reason / missing details for hold', row.auditNotes || 'Need customer clarification')
+          : action === 'reject'
+          ? window.prompt('Reason for rejection', row.auditNotes || 'Rejected by Customer Care')
           : window.prompt('Approval notes', row.auditNotes || 'Verified by Customer Care');
-      if (action === 'hold' && !notes) return;
+      if ((action === 'hold' || action === 'reject') && !notes) return;
       setAuditBusyId(row.id);
       setError(null);
       setNotice(null);
@@ -256,14 +264,40 @@ export default function BulkRequestsPage() {
           setError(res.errorText);
           return;
         }
-        setNotice(action === 'approve' ? 'Bulk request approved and released to mediators.' : 'Bulk request put on hold.');
+        setNotice(
+          action === 'approve'
+            ? 'Bulk request approved and released to mediators.'
+            : action === 'hold'
+            ? 'Bulk request put on hold.'
+            : 'Bulk request rejected.',
+        );
+        // Refresh details modal if it's currently open
+        if (selectedAuditRow && selectedAuditRow.id === row.id) {
+          setSelectedAuditRow(res.data ?? null);
+        }
         await loadAuditQueue();
       } finally {
         setAuditBusyId(null);
       }
     },
-    [loadAuditQueue, token],
+    [loadAuditQueue, token, selectedAuditRow],
   );
+
+  const openAuditDetails = useCallback(async (row: BatchSummary) => {
+    setSelectedAuditRow(row);
+    setModalItems([]);
+    setModalItemsBusy(true);
+    try {
+      const res = await apiFetch<BatchItem[]>(`/api/v1/batches/${row.id}/items`, undefined, token);
+      if (res.ok) {
+        setModalItems(res.data ?? []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setModalItemsBusy(false);
+    }
+  }, [token]);
 
   const loadBatch = useCallback(
     async (idRaw?: string) => {
@@ -368,6 +402,133 @@ export default function BulkRequestsPage() {
     [batchId, loadBatch, token],
   );
 
+  const auditColumnDefs = useMemo<ColDef<BatchSummary>[]>(() => {
+    return [
+      {
+        headerName: 'Created At',
+        field: 'createdAt',
+        valueFormatter: (params) => params.value ? new Date(params.value).toLocaleString() : '',
+        sort: 'desc',
+        width: 170,
+      },
+      {
+        headerName: 'Scheduled At',
+        valueGetter: (params) => {
+          if (!params.data) return '';
+          try {
+            if (params.data.taskTemplateJson) {
+              const t = JSON.parse(params.data.taskTemplateJson);
+              if (t.scheduledAt) return new Date(t.scheduledAt).toLocaleString();
+            }
+          } catch {}
+          return params.data.scheduledWindowStart ? new Date(params.data.scheduledWindowStart).toLocaleString() : 'Instant';
+        },
+        width: 170,
+      },
+      {
+        headerName: 'Task Name',
+        valueGetter: (params) => {
+          if (!params.data) return '';
+          try {
+            if (params.data.taskTemplateJson) {
+              const t = JSON.parse(params.data.taskTemplateJson);
+              return t.title || params.data.title;
+            }
+          } catch {}
+          return params.data.title;
+        },
+        flex: 1,
+        minWidth: 150,
+      },
+      {
+        headerName: 'Amount',
+        valueGetter: (params) => {
+          if (!params.data) return '';
+          try {
+            if (params.data.taskTemplateJson) {
+              const t = JSON.parse(params.data.taskTemplateJson);
+              return t.budgetPaise ? `₹${Math.round(t.budgetPaise / 100)}` : '-';
+            }
+          } catch {}
+          return '-';
+        },
+        width: 100,
+      },
+      {
+        headerName: 'Buyer',
+        field: 'buyerName',
+        valueFormatter: (params) => params.value || params.data?.buyerEmail || 'N/A',
+        width: 150,
+      },
+      {
+        headerName: 'Helpers',
+        valueGetter: (params) => {
+          if (!params.data) return '0/0';
+          return `${params.data.addedWorkerCount || 0}/${params.data.requestedHelperCount || params.data.total || 0}`;
+        },
+        width: 110,
+      },
+      {
+        headerName: 'Status',
+        field: 'status',
+        cellRenderer: (params: ICellRendererParams<BatchSummary>) => {
+          const status = params.value as string;
+          let color = 'bg-gray-100 text-gray-800';
+          if (status === 'PENDING_AUDIT') color = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+          else if (status === 'ON_HOLD') color = 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+          else if (status === 'PENDING_MEDIATOR') color = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400';
+          else if (status === 'CANCELLED') color = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+          return (
+            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${color}`}>
+              {status}
+            </span>
+          );
+        },
+        width: 130,
+      },
+      {
+        headerName: 'Actions',
+        cellRenderer: (params: ICellRendererParams<BatchSummary>) => {
+          const row = params.data;
+          if (!row) return null;
+          const rowBusy = auditBusyId === row.id;
+          return (
+            <div className="flex gap-2 items-center h-full">
+              <button
+                onClick={() => void openAuditDetails(row)}
+                className="rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700"
+              >
+                Details
+              </button>
+              <button
+                disabled={rowBusy || row.status === 'PENDING_MEDIATOR'}
+                onClick={() => void actOnAudit(row, 'approve')}
+                className="rounded border border-emerald-500/30 px-2 py-0.5 text-xs text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-50"
+              >
+                Approve
+              </button>
+              <button
+                disabled={rowBusy || row.status === 'ON_HOLD'}
+                onClick={() => void actOnAudit(row, 'hold')}
+                className="rounded border border-amber-500/30 px-2 py-0.5 text-xs text-amber-300 hover:bg-amber-500/10 disabled:opacity-50"
+              >
+                Hold
+              </button>
+              <button
+                disabled={rowBusy || row.status === 'CANCELLED'}
+                onClick={() => void actOnAudit(row, 'reject')}
+                className="rounded border border-red-500/30 px-2 py-0.5 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+              >
+                Reject
+              </button>
+            </div>
+          );
+        },
+        width: 280,
+      },
+    ];
+  }, [auditBusyId, actOnAudit, openAuditDetails]);
+
   return (
     <main className="min-h-dvh bg-background text-foreground">
       <Nav />
@@ -399,64 +560,22 @@ export default function BulkRequestsPage() {
                 <option value="PENDING_AUDIT">Pending Audit</option>
                 <option value="ON_HOLD">On Hold</option>
                 <option value="PENDING_MEDIATOR">Released</option>
+                <option value="CANCELLED">Cancelled</option>
               </select>
               <button onClick={() => void loadAuditQueue()} className="rounded-lg border border-foreground/15 px-3 py-2 text-xs hover:bg-foreground/5">
                 Refresh
               </button>
             </div>
           </div>
-          <div className="overflow-auto rounded-xl border border-foreground/10">
-            <table className="w-full text-sm">
-              <thead className="bg-foreground/5 text-foreground/70">
-                <tr>
-                  <th className="px-3 py-2 text-left">Request</th>
-                  <th className="px-3 py-2 text-left">Helpers</th>
-                  <th className="px-3 py-2 text-left">Status</th>
-                  <th className="px-3 py-2 text-left">Notes</th>
-                  <th className="px-3 py-2 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditRows.map((row) => {
-                  const rowBusy = auditBusyId === row.id;
-                  return (
-                    <tr key={row.id} className="border-t border-foreground/10">
-                      <td className="px-3 py-2">
-                        <div className="font-semibold">{row.title}</div>
-                        <div className="text-xs text-foreground/60">{row.id}</div>
-                        <div className="text-xs text-foreground/60">{new Date(row.createdAt).toLocaleString()}</div>
-                      </td>
-                      <td className="px-3 py-2">{row.addedWorkerCount || 0}/{row.requestedHelperCount || row.total || 0}</td>
-                      <td className="px-3 py-2">{row.status}</td>
-                      <td className="px-3 py-2">{row.auditNotes || row.notes || '-'}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            disabled={rowBusy || row.status === 'PENDING_MEDIATOR'}
-                            onClick={() => void actOnAudit(row, 'approve')}
-                            className="rounded-md border border-emerald-400/40 px-2 py-1 text-xs text-emerald-300 disabled:opacity-50"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            disabled={rowBusy || row.status === 'ON_HOLD'}
-                            onClick={() => void actOnAudit(row, 'hold')}
-                            className="rounded-md border border-amber-400/40 px-2 py-1 text-xs text-amber-300 disabled:opacity-50"
-                          >
-                            Put on Hold
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {auditRows.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-5 text-center text-foreground/60" colSpan={5}>No requests in this queue.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+          <div className="overflow-hidden rounded-xl border border-foreground/10">
+            <DataGrid<BatchSummary>
+              rowData={auditRows}
+              columnDefs={auditColumnDefs}
+              height={400}
+              quickFilter={true}
+              pagination={true}
+              pageSize={10}
+            />
           </div>
         </section>
 
@@ -649,6 +768,174 @@ export default function BulkRequestsPage() {
             </div>
           </section>
         ) : null}
+        {selectedAuditRow ? (() => {
+          let template: any = {};
+          try {
+            if (selectedAuditRow.taskTemplateJson) {
+              template = JSON.parse(selectedAuditRow.taskTemplateJson);
+            }
+          } catch {}
+          const rowBusy = auditBusyId === selectedAuditRow.id;
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+              <div className="w-full max-w-3xl rounded-2xl bg-background border border-foreground/10 p-6 shadow-xl max-h-[90vh] overflow-y-auto space-y-6">
+                <div className="flex items-center justify-between border-b border-foreground/10 pb-3">
+                  <div>
+                    <h2 className="text-lg font-bold">Mediator Request Details</h2>
+                    <p className="text-xs text-foreground/60">Batch ID: {selectedAuditRow.id}</p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedAuditRow(null)}
+                    className="rounded-lg border border-foreground/15 p-2 text-sm hover:bg-foreground/5"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* Task details */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold border-b border-foreground/5 pb-1">Task Specification</h3>
+                    <div>
+                      <span className="text-xs text-foreground/60 block">Task Name</span>
+                      <span className="text-sm font-medium">{template.title || selectedAuditRow.title}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-foreground/60 block">Description</span>
+                      <p className="text-sm">{template.description || 'No description provided'}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-xs text-foreground/60 block">Amount / Budget</span>
+                        <span className="text-sm font-bold text-emerald-400">
+                          ₹{template.budgetPaise ? Math.round(template.budgetPaise / 100) : '-'} per helper
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-foreground/60 block">Expected Duration</span>
+                        <span className="text-sm">{template.timeMinutes || '-'} minutes</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-foreground/60 block">Address</span>
+                      <span className="text-sm">{template.addressText || 'N/A'}</span>
+                    </div>
+                    {template.landmark ? (
+                      <div>
+                        <span className="text-xs text-foreground/60 block">Landmark</span>
+                        <span className="text-sm">{template.landmark}</span>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* Buyer and metadata details */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold border-b border-foreground/5 pb-1">Buyer & Routing Info</h3>
+                    <div>
+                      <span className="text-xs text-foreground/60 block">Buyer Name</span>
+                      <span className="text-sm font-medium">{selectedAuditRow.buyerName || 'N/A'}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-xs text-foreground/60 block">Buyer Phone</span>
+                        <span className="text-sm">{selectedAuditRow.buyerPhone || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-foreground/60 block">Buyer Email</span>
+                        <span className="text-sm">{selectedAuditRow.buyerEmail || 'N/A'}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-foreground/60 block">Buyer ID</span>
+                      <span className="text-xs font-mono">{selectedAuditRow.buyerId || 'N/A'}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-xs text-foreground/60 block">Date Created</span>
+                        <span className="text-sm">{new Date(selectedAuditRow.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-foreground/60 block">Scheduled At</span>
+                        <span className="text-sm">
+                          {template.scheduledAt ? new Date(template.scheduledAt).toLocaleString() : 'Instant'}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-foreground/60 block">Audit Notes</span>
+                      <span className="text-sm italic">{selectedAuditRow.auditNotes || 'No audit notes recorded'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Helpers Accepted */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold border-b border-foreground/5 pb-1">
+                    Helpers Status ({selectedAuditRow.addedWorkerCount || 0}/{selectedAuditRow.requestedHelperCount || selectedAuditRow.total || 0} accepted)
+                  </h3>
+                  {modalItemsBusy ? (
+                    <p className="text-xs text-foreground/60 animate-pulse">Loading accepted helpers...</p>
+                  ) : modalItems.length > 0 ? (
+                    <div className="overflow-x-auto rounded-lg border border-foreground/10 max-h-40">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-foreground/5 text-foreground/70">
+                          <tr>
+                            <th className="px-3 py-1.5">Line</th>
+                            <th className="px-3 py-1.5">Helper ID</th>
+                            <th className="px-3 py-1.5">Helper Name</th>
+                            <th className="px-3 py-1.5">Task Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {modalItems.map((item) => (
+                            <tr key={item.id} className="border-t border-foreground/10">
+                              <td className="px-3 py-1.5">{item.lineNo}</td>
+                              <td className="px-3 py-1.5 font-mono">{item.helperId || 'Not Accepted Yet'}</td>
+                              <td className="px-3 py-1.5">{item.helperName || '-'}</td>
+                              <td className="px-3 py-1.5 font-semibold text-indigo-400">{item.taskStatus || item.lineStatus}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-foreground/60">No items or helpers found for this batch.</p>
+                  )}
+                </div>
+
+                {/* Modal actions */}
+                <div className="flex flex-wrap items-center justify-between border-t border-foreground/10 pt-4 gap-3">
+                  <span className="text-sm">
+                    Status: <strong className="text-indigo-400">{selectedAuditRow.status}</strong>
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={rowBusy || selectedAuditRow.status === 'PENDING_MEDIATOR'}
+                      onClick={() => void actOnAudit(selectedAuditRow, 'approve')}
+                      className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+                    >
+                      Approve Request
+                    </button>
+                    <button
+                      disabled={rowBusy || selectedAuditRow.status === 'ON_HOLD'}
+                      onClick={() => void actOnAudit(selectedAuditRow, 'hold')}
+                      className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50"
+                    >
+                      Put on Hold
+                    </button>
+                    <button
+                      disabled={rowBusy || selectedAuditRow.status === 'CANCELLED'}
+                      onClick={() => void actOnAudit(selectedAuditRow, 'reject')}
+                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
+                    >
+                      Reject Request
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })() : null}
       </section>
     </main>
   );
