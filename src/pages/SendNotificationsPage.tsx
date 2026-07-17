@@ -10,19 +10,34 @@ type UserRow = {
   email: string | null;
 };
 
+type SendResult = {
+  targetedUsers: number;
+  usersWithPushTokens: number;
+  deviceTokens: number;
+  queued: boolean;
+};
+
+type NotificationStatus = {
+  firebaseReady: boolean;
+  registeredDeviceTokens: number;
+  deliveryMode: string;
+};
+
 export default function SendNotificationsPage() {
   const { state } = useAuth();
   const [buyers, setBuyers] = useState<UserRow[]>([]);
   const [helpers, setHelpers] = useState<UserRow[]>([]);
+  const [mediators, setMediators] = useState<UserRow[]>([]);
   
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [sending, setSending] = useState(false);
+  const [notificationStatus, setNotificationStatus] = useState<NotificationStatus | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Form state
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [targetRole, setTargetRole] = useState<'ALL' | 'CITIZEN' | 'PARTNER'>('ALL');
+  const [targetRole, setTargetRole] = useState<'ALL' | 'CITIZEN' | 'PARTNER' | 'MEDIATOR'>('ALL');
   const [scope, setScope] = useState<'ALL' | 'SPECIFIC'>('ALL');
   
   // Specific users selection
@@ -34,9 +49,11 @@ export default function SendNotificationsPage() {
     let active = true;
     (async () => {
       setLoadingUsers(true);
-      const [buyersRes, helpersRes] = await Promise.all([
+      const [buyersRes, helpersRes, mediatorsRes, statusRes] = await Promise.all([
         apiFetch<UserRow[]>('/api/v1/admin/buyers', undefined, state.accessToken),
         apiFetch<UserRow[]>('/api/v1/admin/helpers', undefined, state.accessToken),
+        apiFetch<UserRow[]>('/api/v1/admin/mediators', undefined, state.accessToken),
+        apiFetch<NotificationStatus>('/api/v1/admin/notifications/status', undefined, state.accessToken),
       ]);
       if (!active) return;
       setLoadingUsers(false);
@@ -46,6 +63,13 @@ export default function SendNotificationsPage() {
       }
       if (helpersRes.ok && Array.isArray(helpersRes.data)) {
         setHelpers(helpersRes.data);
+      }
+      if (mediatorsRes.ok && Array.isArray(mediatorsRes.data)) {
+        setMediators(mediatorsRes.data);
+      }
+      if (statusRes.ok) setNotificationStatus(statusRes.data);
+      if (!buyersRes.ok || !helpersRes.ok || !mediatorsRes.ok || !statusRes.ok) {
+        setMessage({ type: 'error', text: 'Some audience lists could not be loaded. Refresh and try again.' });
       }
     })();
     return () => {
@@ -64,10 +88,12 @@ export default function SendNotificationsPage() {
       return buyers;
     } else if (targetRole === 'PARTNER') {
       return helpers;
+    } else if (targetRole === 'MEDIATOR') {
+      return mediators;
     } else {
-      return [...buyers, ...helpers];
+      return [...buyers, ...helpers, ...mediators];
     }
-  }, [targetRole, buyers, helpers]);
+  }, [targetRole, buyers, helpers, mediators]);
 
   // Filter list by search query
   const filteredUsersList = useMemo(() => {
@@ -116,7 +142,7 @@ export default function SendNotificationsPage() {
     setSending(true);
     setMessage(null);
 
-    const res = await apiFetch<void>(
+    const res = await apiFetch<SendResult>(
       '/api/v1/admin/notifications/send',
       {
         method: 'POST',
@@ -132,11 +158,21 @@ export default function SendNotificationsPage() {
 
     setSending(false);
 
-    if (res.ok) {
-      setMessage({ type: 'success', text: 'Push notifications dispatched successfully!' });
+    if (res.ok && res.data.queued) {
+      setMessage({
+        type: 'success',
+        text: `Notification queued for ${res.data.usersWithPushTokens} user${res.data.usersWithPushTokens === 1 ? '' : 's'} across ${res.data.deviceTokens} registered device${res.data.deviceTokens === 1 ? '' : 's'}.`,
+      });
       setTitle('');
       setBody('');
       setSelectedUserIds({});
+    } else if (res.ok) {
+      setMessage({
+        type: 'error',
+        text: res.data.targetedUsers > 0
+          ? 'The selected users do not have an active push token. Ask them to open and sign in to the latest app.'
+          : 'No active users match this audience.',
+      });
     } else {
       setMessage({ type: 'error', text: res.errorText || 'Failed to send notifications.' });
     }
@@ -165,6 +201,26 @@ export default function SendNotificationsPage() {
           </div>
         )}
 
+        {notificationStatus ? (
+          <div className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-xs ${
+            notificationStatus.firebaseReady
+              ? 'border-emerald-500/25 bg-emerald-500/8 text-foreground'
+              : 'border-amber-500/30 bg-amber-500/10 text-foreground'
+          }`}>
+            <div>
+              <span className="font-black">Delivery service: {notificationStatus.deliveryMode}</span>
+              <span className="ml-2 text-foreground/60">
+                {notificationStatus.registeredDeviceTokens} registered device token{notificationStatus.registeredDeviceTokens === 1 ? '' : 's'}
+              </span>
+            </div>
+            {!notificationStatus.firebaseReady ? (
+              <span className="font-semibold text-amber-600 dark:text-amber-300">
+                Firebase is unavailable; only Expo tokens can receive alerts.
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="grid gap-6 md:grid-cols-3">
           {/* Form Composer (2/3 width) */}
           <section className="md:col-span-2 rounded-2xl border border-foreground/10 p-6 bg-foreground/2 space-y-5">
@@ -175,8 +231,8 @@ export default function SendNotificationsPage() {
                 <label className="block text-xs font-semibold uppercase tracking-wider text-foreground/75 mb-1.5">
                   Target Role
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['ALL', 'CITIZEN', 'PARTNER'] as const).map((r) => (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {(['ALL', 'CITIZEN', 'PARTNER', 'MEDIATOR'] as const).map((r) => (
                     <button
                       key={r}
                       type="button"
@@ -187,7 +243,13 @@ export default function SendNotificationsPage() {
                           : 'bg-background border-foreground/15 text-foreground hover:bg-foreground/5'
                       }`}
                     >
-                      {r === 'ALL' ? 'All Roles' : r === 'CITIZEN' ? 'Citizens (Buyers)' : 'Partners (Helpers)'}
+                      {r === 'ALL'
+                        ? 'All App Roles'
+                        : r === 'CITIZEN'
+                          ? 'Citizens'
+                          : r === 'PARTNER'
+                            ? 'Partners'
+                            : 'Mediators'}
                     </button>
                   ))}
                 </div>
@@ -230,7 +292,8 @@ export default function SendNotificationsPage() {
                 <input
                   id="notif-title"
                   type="text"
-                  placeholder="Enter catchit title (e.g. Special Weekend Bonus!)"
+                  placeholder="Enter a clear title (e.g. Special weekend bonus)"
+                  maxLength={80}
                   className="w-full rounded-xl border border-foreground/15 bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -249,6 +312,7 @@ export default function SendNotificationsPage() {
                   className="w-full rounded-xl border border-foreground/15 bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-none"
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
+                  maxLength={500}
                   required
                 />
               </div>
