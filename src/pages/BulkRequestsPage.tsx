@@ -17,6 +17,8 @@ type BatchSummary = {
   title: string;
   notes?: string | null;
   status: string;
+  scheduledWindowStart?: string | null;
+  scheduledWindowEnd?: string | null;
   total: number;
   requestedHelperCount?: number | null;
   addedWorkerCount?: number | null;
@@ -25,6 +27,11 @@ type BatchSummary = {
   batchCompletionOtp?: string | null;
   byTaskStatus: Record<string, number>;
   createdAt: string;
+  buyerId?: string | null;
+  buyerName?: string | null;
+  buyerPhone?: string | null;
+  buyerEmail?: string | null;
+  taskTemplateJson?: string | null;
 };
 
 type BatchItem = {
@@ -39,6 +46,8 @@ type BatchItem = {
   taskTitle?: string | null;
   canRetry?: boolean;
   canCancel?: boolean;
+  helperId?: string | null;
+  helperName?: string | null;
 };
 
 type CsvLine = {

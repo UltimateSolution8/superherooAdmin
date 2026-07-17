@@ -1,24 +1,36 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { onAuthExpired } from '../lib/api';
-import LoginPage from './LoginPage';
-import DashboardPage from './DashboardPage';
-import HelpersPage from './HelpersPage';
-import PendingHelpersPage from './PendingHelpersPage';
-import BuyersPage from './BuyersPage';
-import MediatorsPage from './MediatorsPage';
-import TasksPage from './TasksPage';
-import TaskDetailPage from './TaskDetailPage';
-import SupportTicketsPage from './SupportTicketsPage';
-import SupportTicketDetailPage from './SupportTicketDetailPage';
-import SignupPage from './SignupPage';
-import VideoKycPage from './VideoKycPage';
-import LiveKycPage from './LiveKycPage';
-import LiveKycJoinPage from './LiveKycJoinPage';
-import BulkRequestsPage from './BulkRequestsPage';
-import LearnPage from './LearnPage';
-import SendNotificationsPage from './SendNotificationsPage';
+
+const LoginPage = lazy(() => import('./LoginPage'));
+const DashboardPage = lazy(() => import('./DashboardPage'));
+const HelpersPage = lazy(() => import('./HelpersPage'));
+const PendingHelpersPage = lazy(() => import('./PendingHelpersPage'));
+const BuyersPage = lazy(() => import('./BuyersPage'));
+const MediatorsPage = lazy(() => import('./MediatorsPage'));
+const TasksPage = lazy(() => import('./TasksPage'));
+const TaskDetailPage = lazy(() => import('./TaskDetailPage'));
+const SupportTicketsPage = lazy(() => import('./SupportTicketsPage'));
+const SupportTicketDetailPage = lazy(() => import('./SupportTicketDetailPage'));
+const SignupPage = lazy(() => import('./SignupPage'));
+const VideoKycPage = lazy(() => import('./VideoKycPage'));
+const LiveKycPage = lazy(() => import('./LiveKycPage'));
+const LiveKycJoinPage = lazy(() => import('./LiveKycJoinPage'));
+const BulkRequestsPage = lazy(() => import('./BulkRequestsPage'));
+const LearnPage = lazy(() => import('./LearnPage'));
+const SendNotificationsPage = lazy(() => import('./SendNotificationsPage'));
+
+function PageLoader() {
+  return (
+    <div className="grid min-h-dvh place-items-center bg-background">
+      <div className="flex items-center gap-3 rounded-2xl border border-foreground/10 bg-foreground/3 px-5 py-4 text-sm font-bold shadow-xl shadow-black/5">
+        <span className="h-4 w-4 animate-pulse rounded-full bg-indigo-500" />
+        Loading workspace
+      </div>
+    </div>
+  );
+}
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { state } = useAuth();
@@ -56,6 +68,7 @@ export default function App() {
   return (
     <AuthProvider>
       <SessionExpiryWatcher />
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route
           path="/login"
@@ -188,6 +201,7 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </AuthProvider>
   );
 }
