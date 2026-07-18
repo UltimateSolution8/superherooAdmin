@@ -102,7 +102,7 @@ export default function SendNotificationsPage() {
     return targetUsersList.filter(
       (u) =>
         (u.displayName && u.displayName.toLowerCase().includes(q)) ||
-        u.phone.includes(q) ||
+        (u.phone && u.phone.includes(q)) ||
         (u.email && u.email.toLowerCase().includes(q))
     );
   }, [searchQuery, targetUsersList]);
@@ -317,13 +317,28 @@ export default function SendNotificationsPage() {
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={sending}
-                className="w-full rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition-all"
-              >
-                {sending ? 'Dispatching Push Alerts...' : 'Send Push Notifications'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={sending}
+                  className="flex-1 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition-all"
+                >
+                  {sending ? 'Dispatching Push Alerts...' : 'Send Push Notifications'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTitle('');
+                    setBody('');
+                    setSelectedUserIds({});
+                    setSearchQuery('');
+                    setMessage(null);
+                  }}
+                  className="rounded-xl border border-foreground/15 bg-background px-4 py-3 text-sm font-bold text-foreground hover:bg-foreground/5 transition-all"
+                >
+                  Clear
+                </button>
+              </div>
             </form>
           </section>
 

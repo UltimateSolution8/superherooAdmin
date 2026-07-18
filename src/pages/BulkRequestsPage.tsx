@@ -874,6 +874,16 @@ export default function BulkRequestsPage() {
                       <span className="text-xs text-foreground/60 block">Audit Notes</span>
                       <span className="text-sm italic">{selectedAuditRow.auditNotes || 'No audit notes recorded'}</span>
                     </div>
+                    <div className="grid grid-cols-2 gap-2 border-t border-foreground/5 pt-2 mt-2">
+                      <div>
+                        <span className="text-xs text-foreground/60 block font-semibold text-blue-400">Batch Start OTP</span>
+                        <span className="text-sm font-mono font-bold text-blue-400">{selectedAuditRow.batchStartOtp || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-foreground/60 block font-semibold text-blue-400">Batch Completion OTP</span>
+                        <span className="text-sm font-mono font-bold text-blue-400">{selectedAuditRow.batchCompletionOtp || 'N/A'}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
