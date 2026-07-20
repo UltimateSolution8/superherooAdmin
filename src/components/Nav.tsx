@@ -5,6 +5,7 @@ import { apiFetch } from '../lib/api';
 
 const navItems = [
   { label: 'Dashboard', href: '/', icon: '📊' },
+  { label: 'Reports & BI', href: '/reports', icon: '📈' },
   { label: 'Superherooos', href: '/helpers', icon: '👥' },
   { label: 'Pending', href: '/helpers/pending', icon: '⏳' },
   { label: 'Live KYC', href: '/kyc/live', icon: '📹' },
@@ -41,6 +42,7 @@ export function Nav() {
   const [actionsOpen, setActionsOpen] = useState(false);
   const previousActionCount = useRef<number | null>(null);
 
+  const [menuOpen, setMenuOpen] = useState(false);
   const role = state.user?.role || 'ADMIN';
   const allowedNavItems = navItems.filter((item) => {
     if (role === 'ADMIN') return true;
@@ -97,7 +99,7 @@ export function Nav() {
 
   return (
     <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-foreground/8">
-      <div className="mx-auto flex max-w-7xl flex-nowrap items-center gap-4 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         <Link to="/" className="group flex shrink-0 items-center gap-3">
           <img
             src="/superlogo.png"
@@ -109,8 +111,8 @@ export function Nav() {
             <div className="text-[10px] text-foreground/50 font-medium uppercase tracking-wider">Admin Console</div>
           </div>
         </Link>
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-          <div className="flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex items-center gap-4">
+          <div className="hidden xl:flex items-center gap-1">
           {allowedNavItems.map((item) => {
             const active = location.pathname === item.href;
             return (
@@ -186,12 +188,53 @@ export function Nav() {
               logout();
               navigate('/login', { replace: true });
             }}
-            className="shrink-0 rounded-lg border border-foreground/15 px-3 py-2 text-xs font-medium text-foreground/70 hover:text-foreground hover:bg-foreground/5"
+            className="hidden xl:block shrink-0 rounded-lg border border-foreground/15 px-3 py-2 text-xs font-medium text-foreground/70 hover:text-foreground hover:bg-foreground/5"
           >
             Sign out
           </button>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            className="xl:hidden flex h-9 w-9 items-center justify-center rounded-lg border border-foreground/15 text-xl text-foreground/75 hover:bg-foreground/5 hover:text-foreground"
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? '✕' : '☰'}
+          </button>
         </div>
       </div>
+      {menuOpen && (
+        <div className="xl:hidden border-t border-foreground/8 bg-background/95 backdrop-blur-lg px-4 py-3 space-y-1">
+          {allowedNavItems.map((item) => {
+            const active = location.pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                onClick={() => setMenuOpen(false)}
+                className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
+                  active ? 'bg-foreground/10 text-foreground' : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
+                }`}
+                to={item.href}
+              >
+                <span className="text-lg">{item.icon}</span>
+                {item.label}
+              </Link>
+            );
+          })}
+          <div className="border-t border-foreground/8 pt-3 mt-2">
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                logout();
+                navigate('/login', { replace: true });
+              }}
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10"
+            >
+              <span className="text-lg">🚪</span>
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
