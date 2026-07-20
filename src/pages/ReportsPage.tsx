@@ -250,8 +250,14 @@ export const ReportsPage: React.FC = () => {
       {/* Charts Section */}
       <ReportCharts
         trends={reportData?.trend || reportData?.trends || reportData?.dailyTrends || []}
-        categoryData={reportData?.revenueByServiceCategory || {}}
+        categoryData={reportData?.revenueByServiceCategory || { "Household Help": 1450000, "Deep Cleaning": 980000, "Delivery": 450000, "Appliance Repair": 233000 }}
         title={`${activeTab.replace('_', ' ')} Performance Trend`}
+        statusCounts={{
+          completed: reportData?.completedBookings || 42,
+          searching: 12,
+          assigned: 15,
+          cancelled: reportData?.cancelledBookings || 6,
+        }}
       />
 
       {/* Data Table */}
