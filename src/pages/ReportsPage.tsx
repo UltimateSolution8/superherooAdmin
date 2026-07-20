@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../lib/auth';
+import { apiFetch, getApiBaseUrl } from '../lib/api';
 import { DateRangePicker, DateRange } from '../components/reports/DateRangePicker';
 import { ReportFilterBar, ReportFilterState } from '../components/reports/ReportFilterBar';
 import { KpiCardGrid, KpiCardProps } from '../components/reports/KpiCardGrid';
@@ -21,6 +23,7 @@ type ReportTab =
   | 'AUDIT_LOGS';
 
 export const ReportsPage: React.FC = () => {
+  const { state: authState } = useAuth();
   const [activeTab, setActiveTab] = useState<ReportTab>('EXECUTIVE');
   const [isLoading, setIsLoading] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -40,7 +43,6 @@ export const ReportsPage: React.FC = () => {
   const fetchReport = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
       let endpoint = '/api/v1/admin/reports/master-summary';
 
       if (activeTab === 'BOOKINGS') endpoint = '/api/v1/admin/reports/bookings';
@@ -63,16 +65,11 @@ export const ReportsPage: React.FC = () => {
         location: filters.location,
       });
 
-      const res = await fetch(`${endpoint}?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const token = authState.accessToken || localStorage.getItem('superheroo_admin_access') || '';
+      const result = await apiFetch<any>(`${endpoint}?${params.toString()}`, undefined, token);
 
-      if (res.ok) {
-        const json = await res.json();
-        setReportData(json);
+      if (result.ok) {
+        setReportData(result.data);
       }
     } catch (e) {
       console.error('Failed to fetch report data:', e);
@@ -86,7 +83,7 @@ export const ReportsPage: React.FC = () => {
   }, [activeTab, dateRange]);
 
   const handleExportCsv = async () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const token = authState.accessToken || localStorage.getItem('superheroo_admin_access') || '';
     const params = new URLSearchParams({
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
@@ -94,7 +91,8 @@ export const ReportsPage: React.FC = () => {
       serviceType: filters.serviceCategory,
       location: filters.location,
     });
-    const res = await fetch(`/api/v1/admin/reports/export/bookings.csv?${params.toString()}`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/api/v1/admin/reports/export/bookings.csv?${params.toString()}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) {
