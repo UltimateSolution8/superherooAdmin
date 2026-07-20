@@ -20,6 +20,7 @@ const LiveKycJoinPage = lazy(() => import('./LiveKycJoinPage'));
 const BulkRequestsPage = lazy(() => import('./BulkRequestsPage'));
 const LearnPage = lazy(() => import('./LearnPage'));
 const SendNotificationsPage = lazy(() => import('./SendNotificationsPage'));
+const ReportsPage = lazy(() => import('./ReportsPage').then(m => ({ default: m.ReportsPage })));
 
 function PageLoader() {
   return (
@@ -83,6 +84,14 @@ export default function App() {
           element={
             <Protected>
               <DashboardPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <Protected>
+              <ReportsPage />
             </Protected>
           }
         />

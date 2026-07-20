@@ -5,6 +5,7 @@ import { apiFetch } from '../lib/api';
 
 const navItems = [
   { label: 'Dashboard', href: '/', icon: '📊' },
+  { label: 'Reports & BI', href: '/reports', icon: '📈' },
   { label: 'Superherooos', href: '/helpers', icon: '👥' },
   { label: 'Pending', href: '/helpers/pending', icon: '⏳' },
   { label: 'Live KYC', href: '/kyc/live', icon: '📹' },
