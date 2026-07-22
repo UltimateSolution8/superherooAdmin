@@ -51,11 +51,18 @@ export default function AiModerationQueuePage() {
   const fetchQueue = async () => {
     if (!state.accessToken) return;
     setLoading(true);
-    const res = await apiFetch<PageResponse>(
+    let res = await apiFetch<PageResponse>(
       `/api/v1/admin/moderation/queue?status=${statusFilter}&page=${page}&size=20`,
       undefined,
       state.accessToken
     );
+    if (!res.ok) {
+      res = await apiFetch<PageResponse>(
+        `/api/admin/moderation/queue?status=${statusFilter}&page=${page}&size=20`,
+        undefined,
+        state.accessToken
+      );
+    }
     setLoading(false);
     if (res.ok && res.data) {
       setTasks(res.data.content || []);
@@ -81,7 +88,11 @@ export default function AiModerationQueuePage() {
       body = { title: editTitle, description: editDesc, remarks };
     }
 
-    const res = await apiFetch(url, { method, body: JSON.stringify(body) }, state.accessToken);
+    let res = await apiFetch(url, { method, body: JSON.stringify(body) }, state.accessToken);
+    if (!res.ok) {
+      const altUrl = url.replace('/api/v1', '/api');
+      res = await apiFetch(altUrl, { method, body: JSON.stringify(body) }, state.accessToken);
+    }
     setSubmitting(false);
     if (res.ok) {
       setModalType(null);

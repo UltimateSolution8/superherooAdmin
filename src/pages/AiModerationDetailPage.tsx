@@ -56,7 +56,10 @@ export default function AiModerationDetailPage() {
   const fetchDetail = async () => {
     if (!id || !state.accessToken) return;
     setLoading(true);
-    const res = await apiFetch<DetailData>(`/api/v1/admin/moderation/tasks/${id}`, undefined, state.accessToken);
+    let res = await apiFetch<DetailData>(`/api/v1/admin/moderation/tasks/${id}`, undefined, state.accessToken);
+    if (!res.ok) {
+      res = await apiFetch<DetailData>(`/api/admin/moderation/tasks/${id}`, undefined, state.accessToken);
+    }
     setLoading(false);
     if (res.ok && res.data) {
       setData(res.data);
@@ -70,10 +73,16 @@ export default function AiModerationDetailPage() {
   const handleAction = async (action: 'approve' | 'reject') => {
     if (!id || !state.accessToken) return;
     setSubmitting(true);
-    const res = await apiFetch(`/api/v1/admin/moderation/tasks/${id}/${action}`, {
+    let res = await apiFetch(`/api/v1/admin/moderation/tasks/${id}/${action}`, {
       method: 'POST',
       body: JSON.stringify({ remarks })
     }, state.accessToken);
+    if (!res.ok) {
+      res = await apiFetch(`/api/admin/moderation/tasks/${id}/${action}`, {
+        method: 'POST',
+        body: JSON.stringify({ remarks })
+      }, state.accessToken);
+    }
     setSubmitting(false);
     if (res.ok) {
       void fetchDetail();
