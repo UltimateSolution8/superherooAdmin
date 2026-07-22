@@ -52,7 +52,7 @@ export default function AiModerationQueuePage() {
     if (!state.accessToken) return;
     setLoading(true);
     const res = await apiFetch<PageResponse>(
-      `/api/admin/moderation/queue?status=${statusFilter}&page=${page}&size=20`,
+      `/api/v1/admin/moderation/queue?status=${statusFilter}&page=${page}&size=20`,
       undefined,
       state.accessToken
     );
@@ -71,12 +71,12 @@ export default function AiModerationQueuePage() {
   const handleAction = async (action: 'approve' | 'reject' | 'edit-approve') => {
     if (!selectedTask || !state.accessToken) return;
     setSubmitting(true);
-    let url = `/api/admin/moderation/tasks/${selectedTask.taskId}/${action}`;
+    let url = `/api/v1/admin/moderation/tasks/${selectedTask.taskId}/${action}`;
     let method = 'POST';
     let body: any = { remarks };
 
     if (action === 'edit-approve') {
-      url = `/api/admin/moderation/tasks/${selectedTask.taskId}/edit-approve`;
+      url = `/api/v1/admin/moderation/tasks/${selectedTask.taskId}/edit-approve`;
       method = 'PUT';
       body = { title: editTitle, description: editDesc, remarks };
     }
