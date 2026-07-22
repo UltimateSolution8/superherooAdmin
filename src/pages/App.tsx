@@ -21,6 +21,8 @@ const BulkRequestsPage = lazy(() => import('./BulkRequestsPage'));
 const LearnPage = lazy(() => import('./LearnPage'));
 const SendNotificationsPage = lazy(() => import('./SendNotificationsPage'));
 const ReportsPage = lazy(() => import('./ReportsPage').then(m => ({ default: m.ReportsPage })));
+const AiModerationQueuePage = lazy(() => import('./AiModerationQueuePage'));
+const AiModerationDetailPage = lazy(() => import('./AiModerationDetailPage'));
 
 function PageLoader() {
   return (
@@ -84,6 +86,22 @@ export default function App() {
           element={
             <Protected>
               <DashboardPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/moderation"
+          element={
+            <Protected>
+              <AiModerationQueuePage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/moderation/:id"
+          element={
+            <Protected>
+              <AiModerationDetailPage />
             </Protected>
           }
         />

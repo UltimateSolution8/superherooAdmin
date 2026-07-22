@@ -5,6 +5,7 @@ import { apiFetch } from '../lib/api';
 
 const navItems = [
   { label: 'Dashboard', href: '/', icon: '📊' },
+  { label: 'AI Moderation Queue', href: '/moderation', icon: '🤖' },
   { label: 'Reports & BI', href: '/reports', icon: '📈' },
   { label: 'Superherooos', href: '/helpers', icon: '👥' },
   { label: 'Pending', href: '/helpers/pending', icon: '⏳' },
@@ -50,7 +51,7 @@ export function Nav() {
       return ['/kyc/live', '/helpers/pending', '/signup', '/'].includes(item.href);
     }
     if (role === 'SUPPORT') {
-      return ['/support/tickets', '/tasks', '/buyers', '/helpers', '/'].includes(item.href);
+      return ['/moderation', '/support/tickets', '/tasks', '/buyers', '/helpers', '/'].includes(item.href);
     }
     return false;
   });
