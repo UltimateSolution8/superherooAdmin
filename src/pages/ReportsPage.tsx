@@ -10,6 +10,7 @@ import { ExportButton } from '../components/reports/ExportButton';
 
 type ReportTab =
   | 'EXECUTIVE'
+  | 'AI_MODERATION'
   | 'BOOKINGS'
   | 'REVENUE'
   | 'SUBSCRIPTIONS'
@@ -45,7 +46,8 @@ export const ReportsPage: React.FC = () => {
     try {
       let endpoint = '/api/v1/admin/reports/master-summary';
 
-      if (activeTab === 'BOOKINGS') endpoint = '/api/v1/admin/reports/bookings';
+      if (activeTab === 'AI_MODERATION') endpoint = '/api/v1/admin/reports/ai-moderation';
+      else if (activeTab === 'BOOKINGS') endpoint = '/api/v1/admin/reports/bookings';
       else if (activeTab === 'REVENUE') endpoint = '/api/v1/admin/reports/revenue-commission';
       else if (activeTab === 'SUBSCRIPTIONS') endpoint = '/api/v1/admin/reports/subscriptions';
       else if (activeTab === 'CUSTOMERS') endpoint = '/api/v1/admin/reports/customers';
@@ -109,6 +111,37 @@ export const ReportsPage: React.FC = () => {
 
   const getKpiCards = (): KpiCardProps[] => {
     if (!reportData) return [];
+
+    if (activeTab === 'AI_MODERATION') {
+      return [
+        {
+          title: 'Total Evaluated',
+          value: reportData.totalTasksEvaluated || 0,
+          subtitle: `Avg Latency: ${reportData.avgLatencyMs || 120} ms`,
+          iconType: 'orders',
+        },
+        {
+          title: 'Auto-Approval Rate',
+          value: `${reportData.autoApprovalRatePercentage || 0}%`,
+          subtitle: `${reportData.autoApprovedCount || 0} tasks auto-approved`,
+          changePercent: 5.2,
+          iconType: 'rating',
+        },
+        {
+          title: 'Admin Review Queue',
+          value: reportData.adminReviewCount || 0,
+          subtitle: `Queue Rate: ${reportData.adminReviewRatePercentage || 0}%`,
+          iconType: 'time',
+        },
+        {
+          title: 'Rejected Tasks',
+          value: reportData.rejectedCount || 0,
+          subtitle: 'Policy violations & scams',
+          iconType: 'users',
+        },
+      ];
+    }
+
     if (activeTab === 'EXECUTIVE' || activeTab === 'BOOKINGS') {
       return [
         {
@@ -140,15 +173,45 @@ export const ReportsPage: React.FC = () => {
         },
       ];
     }
+
     return [
-      { title: 'Active Buyers', value: reportData.activeBuyersCount || 450, iconType: 'users' },
-      { title: 'Active Partners', value: reportData.activeHelpersCount || 120, iconType: 'users' },
-      { title: 'Avg Customer Rating', value: `${reportData.avgRatingGiven || 4.85} ★`, iconType: 'rating' },
+      { title: 'Active Customers', value: reportData.activeCustomersCount || reportData.activeBuyersCount || 0, iconType: 'users' },
+      { title: 'Active Heroes', value: reportData.activeHelpersCount || 0, iconType: 'users' },
+      { title: 'Avg Customer Rating', value: `${reportData.avgCustomerRating || reportData.avgRatingGiven || 4.85} ★`, iconType: 'rating' },
       { title: 'NPS Score', value: `${reportData.npsScore || 92} / 100`, iconType: 'rating' },
     ];
   };
 
   const getTableColumns = (): ColumnDef[] => {
+    if (activeTab === 'AI_MODERATION') {
+      return [
+        { key: 'taskId', header: 'Task ID', render: (v) => <span className="font-mono text-emerald-400 font-bold">{String(v).slice(0, 8)}...</span> },
+        { key: 'title', header: 'Task Title' },
+        {
+          key: 'aiStatus',
+          header: 'AI Decision',
+          render: (v) => (
+            <span
+              className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                v === 'APPROVED'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                  : v === 'REVIEW'
+                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                  : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+              }`}
+            >
+              {v}
+            </span>
+          ),
+        },
+        { key: 'confidence', header: 'Confidence', render: (v) => `${v || 0}%` },
+        { key: 'riskScore', header: 'Risk Score', render: (v) => <span className={v > 50 ? 'text-rose-400 font-bold' : 'text-slate-300'}>{v || 0}</span> },
+        { key: 'qualityScore', header: 'Quality Score', render: (v) => `${v || 0}/100` },
+        { key: 'modelUsed', header: 'AI Model', render: (v) => <span className="text-[11px] font-mono text-cyan-300">{v}</span> },
+        { key: 'latencyMs', header: 'Latency', render: (v) => `${v || 0} ms` },
+      ];
+    }
+
     if (activeTab === 'BOOKINGS' || activeTab === 'EXECUTIVE') {
       return [
         { key: 'id', header: 'Booking ID', render: (v) => <span className="font-mono text-emerald-400 font-bold">{String(v).slice(0, 8)}...</span> },
@@ -177,6 +240,7 @@ export const ReportsPage: React.FC = () => {
         { key: 'leadTimeMinutes', header: 'Lead Time', render: (v) => (v ? `${v} min` : 'N/A') },
       ];
     }
+
     return [
       { key: 'dateLabel', header: 'Date' },
       { key: 'totalBookings', header: 'Bookings' },
@@ -195,14 +259,14 @@ export const ReportsPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-lg shadow-emerald-500/20">
-              Ultra Premium BI Module
+              Superherooo Business Intelligence
             </span>
-            <span className="text-xs text-slate-500 font-mono">v2.5</span>
+            <span className="text-xs text-slate-500 font-mono">v3.0</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            Reporting & Business Intelligence
+            Reporting & Analytics Center
           </h1>
-          <p className="text-xs text-slate-400">Industry-standard metrics, liquidity tracking, and real-time data insights.</p>
+          <p className="text-xs text-slate-400">Enterprise data insights, AI moderation throughput, revenue, and partner liquidity metrics.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -215,6 +279,7 @@ export const ReportsPage: React.FC = () => {
       <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 border-b border-slate-800 no-scrollbar">
         {[
           { id: 'EXECUTIVE', label: 'Executive Overview' },
+          { id: 'AI_MODERATION', label: '🤖 AI Moderation & Safety' },
           { id: 'BOOKINGS', label: 'Booking & Dispatch' },
           { id: 'REVENUE', label: 'Revenue & Commission' },
           { id: 'SUBSCRIPTIONS', label: 'Subscriptions' },
@@ -250,13 +315,13 @@ export const ReportsPage: React.FC = () => {
       {/* Charts Section */}
       <ReportCharts
         trends={reportData?.trend || reportData?.trends || reportData?.dailyTrends || []}
-        categoryData={reportData?.revenueByServiceCategory || { "Household Help": 1450000, "Deep Cleaning": 980000, "Delivery": 450000, "Appliance Repair": 233000 }}
+        categoryData={reportData?.revenueByServiceCategory || reportData?.riskCategoryBreakdown || { "Errands & Delivery": 1450000, "Queue Standing": 980000, "Heavy Lifting": 450000, "Basic House Help": 233000 }}
         title={`${activeTab.replace('_', ' ')} Performance Trend`}
         statusCounts={{
-          completed: reportData?.completedBookings || 42,
+          completed: reportData?.completedBookings || reportData?.autoApprovedCount || 42,
           searching: 12,
           assigned: 15,
-          cancelled: reportData?.cancelledBookings || 6,
+          cancelled: reportData?.cancelledBookings || reportData?.rejectedCount || 6,
         }}
       />
 
@@ -264,7 +329,7 @@ export const ReportsPage: React.FC = () => {
       <ReportDataTable
         columns={getTableColumns()}
         data={tableData}
-        title={`${activeTab.replace('_', ' ')} Data Records`}
+        title={`${activeTab.replace('_', ' ')} Records`}
       />
     </div>
   );
