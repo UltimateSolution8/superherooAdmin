@@ -160,7 +160,7 @@ export default function VideoKycPage() {
           subtitle="Review superherooo video KYC submissions."
           height={640}
           dateField="createdAt"
-          exportFileName="superheroo-video-kyc.xlsx"
+          exportFileName="superheroo-video-kyc.csv"
           onGridReady={(api) => setGridApi(api)}
           extraContent={
             <button

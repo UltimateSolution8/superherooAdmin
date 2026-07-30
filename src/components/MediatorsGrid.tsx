@@ -250,7 +250,7 @@ export function MediatorsGrid({ mediators }: { mediators: MediatorRow[] }) {
         subtitle="Admin-created mediator accounts for coordinating large bulk bookings. Phone is required for OTP login."
         height={640}
         dateField="createdAt"
-        exportFileName="superheroo-mediators.xlsx"
+        exportFileName="superheroo-mediators.csv"
         onGridReady={(api) => setGridApi(api)}
         onCellValueChanged={handleCellValueChanged}
         extraContent={(

@@ -310,7 +310,7 @@ export function BuyersGrid({ buyers }: { buyers: BuyerRow[] }) {
         subtitle="Manage citizen accounts and contact details. Double-click cells to edit inline."
         height={640}
         dateField="createdAt"
-        exportFileName="superheroo-citizens.xlsx"
+        exportFileName="superheroo-citizens.csv"
         onGridReady={(api) => setGridApi(api)}
         onCellValueChanged={handleCellValueChanged}
         extraContent={(

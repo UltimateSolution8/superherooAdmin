@@ -190,7 +190,7 @@ export function TasksGrid({ tasks }: { tasks: TaskRow[] }) {
       subtitle="View and manage all tasks across the platform."
       height={640}
       dateField="createdAt"
-      exportFileName="superheroo-tasks.xlsx"
+      exportFileName="superheroo-tasks.csv"
       onGridReady={(api) => setGridApi(api)}
       extraContent={(
         <div className="flex items-center gap-2">

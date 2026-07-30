@@ -193,7 +193,7 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
       subtitle="Review superherooo documents and approve/reject KYC."
       height={640}
       dateField="kycSubmittedAt"
-      exportFileName="superheroo-pending-kyc.xlsx"
+      exportFileName="superheroo-pending-kyc.csv"
       onGridReady={(api) => setGridApi(api)}
       extraContent={(
         <div className="flex items-center gap-2">

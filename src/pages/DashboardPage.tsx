@@ -40,7 +40,6 @@ export default function DashboardPage() {
     };
   }, [state.accessToken]);
 
-  const pendingCount = summary?.pendingHelpers ?? 0;
   const searching = summary?.searchingTasks ?? 0;
   const assigned = summary?.assignedTasks ?? 0;
   const arrived = summary?.arrivedTasks ?? 0;

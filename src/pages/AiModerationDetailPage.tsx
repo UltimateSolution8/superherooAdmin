@@ -50,7 +50,7 @@ export default function AiModerationDetailPage() {
   const [data, setData] = useState<DetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRaw, setShowRaw] = useState(false);
-  const [remarks, setRemarks] = useState('');
+  const [remarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const fetchDetail = async () => {

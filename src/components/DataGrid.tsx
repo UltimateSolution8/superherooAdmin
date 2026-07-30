@@ -2,8 +2,6 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import type { ColDef, GridReadyEvent, GridApi } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from 'ag-grid-community';
-import * as XLSX from 'xlsx';
-// @ts-ignore
 import { saveAs } from 'file-saver';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -113,12 +111,33 @@ export function DataGrid<T>({
       rows.push(...filteredRowData);
     }
     if (rows.length === 0) return;
-    const ws = XLSX.utils.json_to_sheet(rows as any[]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, title || 'Sheet1');
-    const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const name = exportFileName || `${title || 'export'}.xlsx`;
-    saveAs(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
+    const headers = Array.from(
+      rows.reduce<Set<string>>((keys, row) => {
+        Object.keys(row as Record<string, unknown>).forEach((key) => keys.add(key));
+        return keys;
+      }, new Set()),
+    );
+    const escapeCsvCell = (value: unknown) => {
+      let text = value == null
+        ? ''
+        : typeof value === 'object'
+          ? JSON.stringify(value)
+          : String(value);
+      // Prevent spreadsheet formula injection when an operator opens the CSV.
+      if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+      return `"${text.replaceAll('"', '""')}"`;
+    };
+    const csv = [
+      headers.map(escapeCsvCell).join(','),
+      ...rows.map((row) =>
+        headers
+          .map((header) => escapeCsvCell((row as Record<string, unknown>)[header]))
+          .join(','),
+      ),
+    ].join('\r\n');
+    const requestedName = exportFileName || `${title || 'export'}.csv`;
+    const name = requestedName.replace(/\.xlsx?$/i, '.csv');
+    saveAs(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }), name);
   }, [exportFileName, filteredRowData, gridApi, title]);
 
   const showToolbar = Boolean(title || subtitle || quickFilter || dateField || exportFileName || extraContent);
@@ -156,7 +175,7 @@ export function DataGrid<T>({
               className="rounded-lg border border-foreground/15 bg-foreground/5 px-3 py-2 text-xs font-semibold hover:bg-foreground/10 disabled:opacity-50"
               disabled={filteredRowData.length === 0}
             >
-              Export Excel
+              Export CSV
             </button>
             {quickFilter && (
               <input

@@ -240,7 +240,7 @@ export function HelpersGrid({ helpers }: { helpers: HelperRow[] }) {
       subtitle="Manage superherooo accounts, contact details, and KYC status."
       height={640}
       dateField="createdAt"
-      exportFileName="superherooo-list.xlsx"
+      exportFileName="superherooo-list.csv"
       onGridReady={(api) => setGridApi(api)}
       extraContent={(
         <div className="flex items-center gap-2">

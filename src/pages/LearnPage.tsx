@@ -472,7 +472,7 @@ export default function LearnPage() {
       setAssignmentAssessmentTitle(assessment.title);
       setAssignmentAll(Boolean(res.data.assignAll));
       setAssignmentHelperIds(Array.isArray(res.data.helperIds) ? res.data.helperIds : []);
-      setNotice(Boolean(res.data.assignAll)
+      setNotice(res.data.assignAll
         ? `"${assessment.title}" is assigned to all helpers.`
         : `"${assessment.title}" is assigned to ${res.data.assignedCount} helper(s).`);
     } finally {
@@ -504,7 +504,7 @@ export default function LearnPage() {
       }
       setAssignmentAll(Boolean(res.data.assignAll));
       setAssignmentHelperIds(Array.isArray(res.data.helperIds) ? res.data.helperIds : []);
-      setNotice(Boolean(res.data.assignAll)
+      setNotice(res.data.assignAll
         ? 'Assessment is now assigned to all helpers.'
         : `Assessment assigned to ${res.data.assignedCount} selected helper(s).`);
     } finally {

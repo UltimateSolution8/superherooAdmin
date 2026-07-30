@@ -429,7 +429,9 @@ export default function BulkRequestsPage() {
               const t = JSON.parse(params.data.taskTemplateJson);
               if (t.scheduledAt) return new Date(t.scheduledAt).toLocaleString();
             }
-          } catch {}
+          } catch {
+            // Fall back to the persisted scheduling fields below.
+          }
           return params.data.scheduledWindowStart ? new Date(params.data.scheduledWindowStart).toLocaleString() : 'Instant';
         },
         width: 170,
@@ -443,7 +445,9 @@ export default function BulkRequestsPage() {
               const t = JSON.parse(params.data.taskTemplateJson);
               return t.title || params.data.title;
             }
-          } catch {}
+          } catch {
+            // Fall back to the request title below.
+          }
           return params.data.title;
         },
         flex: 1,
@@ -458,7 +462,9 @@ export default function BulkRequestsPage() {
               const t = JSON.parse(params.data.taskTemplateJson);
               return t.budgetPaise ? `₹${Math.round(t.budgetPaise / 100)}` : '-';
             }
-          } catch {}
+          } catch {
+            // Invalid legacy template data has no displayable amount.
+          }
           return '-';
         },
         width: 100,
@@ -783,7 +789,9 @@ export default function BulkRequestsPage() {
             if (selectedAuditRow.taskTemplateJson) {
               template = JSON.parse(selectedAuditRow.taskTemplateJson);
             }
-          } catch {}
+          } catch {
+            // Keep the empty template for malformed legacy audit rows.
+          }
           const rowBusy = auditBusyId === selectedAuditRow.id;
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">

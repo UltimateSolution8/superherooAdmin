@@ -316,7 +316,7 @@ export default function LiveKycPage() {
           subtitle="Start a live KYC session with a pending superherooo."
           height={420}
           dateField="kycSubmittedAt"
-          exportFileName="superheroo-live-kyc.xlsx"
+          exportFileName="superheroo-live-kyc.csv"
         />
 
         <section className="rounded-2xl border border-foreground/10 bg-foreground/2 p-4 space-y-3">
