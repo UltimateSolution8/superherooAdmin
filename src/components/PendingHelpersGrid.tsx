@@ -23,6 +23,8 @@ export type PendingHelperRow = {
   payoutBankAccountLast4?: string | null;
   payoutIfscCode?: string | null;
   payoutUpiIdMasked?: string | null;
+  kycSource?: string | null;
+  publicKycId?: string | null;
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -52,10 +54,14 @@ function ActionRenderer(params: ICellRendererParams<PendingHelperRow>) {
   const { data, api } = params;
   const { state } = useAuth();
   if (!data) return null;
+  const isPublicKyc = data.kycSource === 'WEB_PUBLIC_KYC';
+  const actionId = isPublicKyc ? (data.publicKycId || data.helperId) : data.helperId;
 
   const approve = async () => {
     const res = await apiFetch<void>(
-      `/api/v1/admin/helpers/${data.helperId}/approve`,
+      isPublicKyc
+        ? `/api/v1/admin/public-partner-kyc/${actionId}/approve`
+        : `/api/v1/admin/helpers/${actionId}/approve`,
       { method: 'POST' },
       state.accessToken,
     );
@@ -69,7 +75,9 @@ function ActionRenderer(params: ICellRendererParams<PendingHelperRow>) {
   const reject = async () => {
     const reason = prompt('Rejection reason?') || 'Incomplete KYC';
     const res = await apiFetch<void>(
-      `/api/v1/admin/helpers/${data.helperId}/reject`,
+      isPublicKyc
+        ? `/api/v1/admin/public-partner-kyc/${actionId}/reject`
+        : `/api/v1/admin/helpers/${actionId}/reject`,
       { method: 'POST', body: JSON.stringify({ reason }) },
       state.accessToken,
     );
@@ -99,9 +107,14 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
       alert('Select at least one helper.');
       return;
     }
+    const linkedHelpers = selected.filter((row) => row.kycSource !== 'WEB_PUBLIC_KYC');
+    if (!linkedHelpers.length) {
+      alert('Bulk action is only for linked helper accounts. Use row actions for public KYC.');
+      return;
+    }
     const helperIds = Array.from(
       new Set(
-        selected
+        linkedHelpers
           .map((r) => (typeof r.helperId === 'string' ? r.helperId.trim() : ''))
           .filter((id) => UUID_RE.test(id)),
       ),
@@ -129,7 +142,7 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
     }
     const failedIds = new Set((res.data.failures || []).map((f) => f.id));
     const ids = new Set(helperIds);
-    const toRemove = selected.filter((row) => ids.has(row.helperId) && !failedIds.has(row.helperId));
+    const toRemove = linkedHelpers.filter((row) => ids.has(row.helperId) && !failedIds.has(row.helperId));
     if (toRemove.length > 0) {
       gridApi.applyTransaction({ remove: toRemove });
     }
@@ -162,7 +175,16 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
         field: 'helperId',
         width: 140,
         cellClass: 'font-mono text-xs',
-        valueFormatter: (p) => p.value ? `${(p.value as string).substring(0, 8)}…` : '-',
+        valueFormatter: (p) => {
+          const prefix = p.data?.kycSource === 'WEB_PUBLIC_KYC' ? 'Public ' : '';
+          return p.value ? `${prefix}${(p.value as string).substring(0, 8)}…` : '-';
+        },
+      },
+      {
+        headerName: 'Source',
+        field: 'kycSource',
+        width: 130,
+        valueFormatter: (p) => p.value === 'WEB_PUBLIC_KYC' ? 'Public KYC' : 'Helper App',
       },
       { headerName: 'Name', field: 'displayName', flex: 1 },
       { headerName: 'Phone', field: 'phone', width: 140 },
