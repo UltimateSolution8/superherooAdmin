@@ -19,7 +19,12 @@ export default function PendingHelpersPage() {
       );
       if (!active) return;
       if (res.ok) {
-        setHelpers(res.data);
+        setHelpers((res.data || []).map((row) => ({
+          ...row,
+          docFrontUrl: row.docFrontUrl || row.kycDocFrontUrl || null,
+          docBackUrl: row.docBackUrl || row.kycDocBackUrl || null,
+          selfieUrl: row.selfieUrl || row.kycSelfieUrl || null,
+        })));
       } else {
         setError(res.errorText);
       }

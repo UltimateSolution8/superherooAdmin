@@ -12,9 +12,17 @@ export type PendingHelperRow = {
   kycSubmittedAt: string | null;
   kycFullName: string | null;
   kycIdNumber: string | null;
+  kycDocFrontUrl?: string | null;
+  kycDocBackUrl?: string | null;
+  kycSelfieUrl?: string | null;
   docFrontUrl: string | null;
   docBackUrl: string | null;
   selfieUrl: string | null;
+  payoutAccountHolderName?: string | null;
+  payoutBankName?: string | null;
+  payoutBankAccountLast4?: string | null;
+  payoutIfscCode?: string | null;
+  payoutUpiIdMasked?: string | null;
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -22,16 +30,19 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 function DocsRenderer(params: ICellRendererParams<PendingHelperRow>) {
   const d = params.data;
   if (!d) return null;
+  const frontUrl = d.docFrontUrl || d.kycDocFrontUrl;
+  const backUrl = d.docBackUrl || d.kycDocBackUrl;
+  const selfieUrl = d.selfieUrl || d.kycSelfieUrl;
   return (
     <div className="flex items-center gap-2">
-      {d.docFrontUrl ? (
-        <a href={d.docFrontUrl} target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline text-xs">Front</a>
+      {frontUrl ? (
+        <a href={frontUrl} target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline text-xs">Front</a>
       ) : <span className="text-foreground/30 text-xs">Front</span>}
-      {d.docBackUrl ? (
-        <a href={d.docBackUrl} target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline text-xs">Back</a>
+      {backUrl ? (
+        <a href={backUrl} target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline text-xs">Back</a>
       ) : <span className="text-foreground/30 text-xs">Back</span>}
-      {d.selfieUrl ? (
-        <a href={d.selfieUrl} target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline text-xs">Selfie</a>
+      {selfieUrl ? (
+        <a href={selfieUrl} target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline text-xs">Selfie</a>
       ) : <span className="text-foreground/30 text-xs">Selfie</span>}
     </div>
   );
@@ -158,6 +169,24 @@ export function PendingHelpersGrid({ helpers }: { helpers: PendingHelperRow[] })
       { headerName: 'Email', field: 'email', width: 180 },
       { headerName: 'Full Name', field: 'kycFullName', width: 160 },
       { headerName: 'ID Number', field: 'kycIdNumber', width: 140 },
+      { headerName: 'Account Holder', field: 'payoutAccountHolderName', width: 170 },
+      {
+        headerName: 'Bank / IFSC',
+        field: 'payoutBankName',
+        width: 220,
+        valueGetter: (p) => {
+          const bank = p.data?.payoutBankName || '-';
+          const ifsc = p.data?.payoutIfscCode;
+          return ifsc ? `${bank} / ${ifsc}` : bank;
+        },
+      },
+      {
+        headerName: 'Account',
+        field: 'payoutBankAccountLast4',
+        width: 120,
+        valueFormatter: (p) => p.value ? `Ending ${p.value}` : '-',
+      },
+      { headerName: 'UPI', field: 'payoutUpiIdMasked', width: 150 },
       {
         headerName: 'Submitted',
         field: 'kycSubmittedAt',
