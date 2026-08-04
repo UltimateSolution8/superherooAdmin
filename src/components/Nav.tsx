@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/api';
+import { useAdminRealtime } from '../lib/realtime';
 
 const navItems = [
   { label: 'Dashboard', href: '/', icon: '📊' },
@@ -41,6 +42,7 @@ export function Nav() {
   const navigate = useNavigate();
   const [actionCenter, setActionCenter] = useState<ActionCenterResponse | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const { actionRevision } = useAdminRealtime();
   const previousActionCount = useRef<number | null>(null);
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -91,7 +93,7 @@ export function Nav() {
       window.clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [state.accessToken]);
+  }, [state.accessToken, actionRevision]);
 
   const enableBrowserAlerts = async () => {
     if (typeof Notification === 'undefined') return;

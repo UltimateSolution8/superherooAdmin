@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { onAuthExpired } from '../lib/api';
+import { AdminRealtimeProvider } from '../lib/realtime';
 
 const LoginPage = lazy(() => import('./LoginPage'));
 const DashboardPage = lazy(() => import('./DashboardPage'));
@@ -16,7 +17,6 @@ const SupportTicketDetailPage = lazy(() => import('./SupportTicketDetailPage'));
 const SignupPage = lazy(() => import('./SignupPage'));
 const VideoKycPage = lazy(() => import('./VideoKycPage'));
 const LiveKycPage = lazy(() => import('./LiveKycPage'));
-const LiveKycJoinPage = lazy(() => import('./LiveKycJoinPage'));
 const BulkRequestsPage = lazy(() => import('./BulkRequestsPage'));
 const LearnPage = lazy(() => import('./LearnPage'));
 const SendNotificationsPage = lazy(() => import('./SendNotificationsPage'));
@@ -70,6 +70,7 @@ function SessionExpiryWatcher() {
 export default function App() {
   return (
     <AuthProvider>
+      <AdminRealtimeProvider>
       <SessionExpiryWatcher />
       <Suspense fallback={<PageLoader />}>
       <Routes>
@@ -202,14 +203,6 @@ export default function App() {
           }
         />
         <Route
-          path="/kyc/live/join"
-          element={
-            <Protected>
-              <LiveKycJoinPage />
-            </Protected>
-          }
-        />
-        <Route
           path="/bulk-requests"
           element={
             <Protected>
@@ -236,6 +229,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </Suspense>
+      </AdminRealtimeProvider>
     </AuthProvider>
   );
 }
