@@ -49,6 +49,9 @@ export function Nav() {
   const role = state.user?.role || 'ADMIN';
   const allowedNavItems = navItems.filter((item) => {
     if (role === 'ADMIN') return true;
+    if (role === 'ADMIN_READONLY') {
+      return !['/notifications/send', '/signup'].includes(item.href);
+    }
     if (role === 'KYC') {
       return ['/kyc/live', '/helpers/pending', '/signup', '/'].includes(item.href);
     }
@@ -132,6 +135,11 @@ export function Nav() {
             );
           })}
           </div>
+          {role === 'ADMIN_READONLY' ? (
+            <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+              READ ONLY
+            </span>
+          ) : null}
           <div className="relative shrink-0">
             <button
               type="button"

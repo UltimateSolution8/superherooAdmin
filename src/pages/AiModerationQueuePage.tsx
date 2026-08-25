@@ -32,6 +32,12 @@ interface PageResponse {
   number: number;
 }
 
+interface HelperOption {
+  helperId: string;
+  name: string;
+  phone: string;
+}
+
 export default function AiModerationQueuePage() {
   const { state } = useAuth();
   const navigate = useNavigate();
@@ -42,11 +48,16 @@ export default function AiModerationQueuePage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
   const [selectedTask, setSelectedTask] = useState<ModerationTask | null>(null);
-  const [modalType, setModalType] = useState<'approve' | 'reject' | 'edit' | null>(null);
+  // TEMP: MANUAL_MODERATION_MODE — 'assign' modal type added
+  const [modalType, setModalType] = useState<'approve' | 'reject' | 'edit' | 'assign' | null>(null);
   const [remarks, setRemarks] = useState('');
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // TEMP: MANUAL_MODERATION_MODE — helper picker state
+  const [helpers, setHelpers] = useState<HelperOption[]>([]);
+  const [helpersLoading, setHelpersLoading] = useState(false);
+  const [selectedHelperId, setSelectedHelperId] = useState('');
 
   const fetchQueue = async () => {
     if (!state.accessToken) return;
@@ -71,11 +82,23 @@ export default function AiModerationQueuePage() {
     }
   };
 
+  // TEMP: MANUAL_MODERATION_MODE — load approved helper list for the assign dropdown
+  const fetchHelpers = async () => {
+    if (!state.accessToken) return;
+    setHelpersLoading(true);
+    let res = await apiFetch<HelperOption[]>('/api/v1/admin/moderation/helpers', undefined, state.accessToken);
+    if (!res.ok) {
+      res = await apiFetch<HelperOption[]>('/api/admin/moderation/helpers', undefined, state.accessToken);
+    }
+    setHelpersLoading(false);
+    if (res.ok && res.data) setHelpers(res.data);
+  };
+
   useEffect(() => {
     void fetchQueue();
   }, [state.accessToken, statusFilter, page]);
 
-  const handleAction = async (action: 'approve' | 'reject' | 'edit-approve') => {
+  const handleAction = async (action: 'approve' | 'reject' | 'edit-approve' | 'approve-and-assign') => {
     if (!selectedTask || !state.accessToken) return;
     setSubmitting(true);
     let url = `/api/v1/admin/moderation/tasks/${selectedTask.taskId}/${action}`;
@@ -86,6 +109,11 @@ export default function AiModerationQueuePage() {
       url = `/api/v1/admin/moderation/tasks/${selectedTask.taskId}/edit-approve`;
       method = 'PUT';
       body = { title: editTitle, description: editDesc, remarks };
+    } else if (action === 'approve-and-assign') {
+      // TEMP: MANUAL_MODERATION_MODE
+      url = `/api/v1/admin/moderation/tasks/${selectedTask.taskId}/approve-and-assign`;
+      method = 'POST';
+      body = { helperId: selectedHelperId, remarks };
     }
 
     let res = await apiFetch(url, { method, body: JSON.stringify(body) }, state.accessToken);
@@ -98,11 +126,13 @@ export default function AiModerationQueuePage() {
       setModalType(null);
       setSelectedTask(null);
       setRemarks('');
+      setSelectedHelperId('');
       void fetchQueue();
     } else {
       alert(`Action failed: ${res.error || 'Unknown error'}`);
     }
   };
+
 
   return (
     <div className="min-h-dvh bg-slate-950 text-slate-100">
@@ -112,11 +142,13 @@ export default function AiModerationQueuePage() {
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-6">
           <div>
             <h1 className="flex items-center gap-3 text-3xl font-extrabold text-white">
-              <span>🤖</span> AI Moderation & Review Queue
+              <span>🛡️</span> Moderation & Review Queue
             </h1>
-            <p className="mt-1 text-sm text-slate-400">
-              Enterprise AI Safety Agent (`z-ai/glm-4.7-flash-free` primary, `moonshotai/kimi-k3-free` fallback)
-            </p>
+            {/* TEMP: MANUAL_MODERATION_MODE banner */}
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-amber-600/40 bg-amber-500/10 px-3 py-1">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+              <span className="text-xs font-bold text-amber-300">Manual Review Mode Active — AI moderation temporarily paused</span>
+            </div>
           </div>
 
           {/* Filter Dropdown */}
@@ -130,9 +162,9 @@ export default function AiModerationQueuePage() {
               }}
               className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-inner focus:border-indigo-500 focus:outline-none"
             >
-              <option value="ADMIN_REVIEW">⚠️ Needs Admin Review (Queue)</option>
-              <option value="AI_PENDING">⏳ AI Moderation Pending</option>
-              <option value="AI_APPROVED">✅ AI Auto-Approved</option>
+              <option value="ADMIN_REVIEW">⚠️ Needs Review (Queue)</option>
+              <option value="AI_PENDING">⏳ Pending</option>
+              <option value="AI_APPROVED">✅ Auto-Approved</option>
               <option value="ADMIN_APPROVED">🛡️ Admin Approved</option>
               <option value="ADMIN_REJECTED">🚫 Admin Rejected</option>
               <option value="ALL">🌐 All Tasks</option>
@@ -140,19 +172,19 @@ export default function AiModerationQueuePage() {
           </div>
         </div>
 
-        {/* Stats Strip */}
+        {/* Stats Strip — TEMP: MANUAL_MODERATION_MODE */}
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur">
             <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Pending Review</span>
             <p className="mt-2 text-3xl font-black text-white">{totalElements}</p>
           </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">Primary AI Model</span>
-            <p className="mt-2 text-xl font-bold text-slate-200">z-ai/glm-4.7-flash-free</p>
+          <div className="rounded-2xl border border-amber-600/30 bg-amber-500/10 p-5 backdrop-blur">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Review Mode</span>
+            <p className="mt-2 text-xl font-bold text-amber-200">Manual Review Active</p>
           </div>
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Fallback AI Model</span>
-            <p className="mt-2 text-xl font-bold text-slate-200">moonshotai/kimi-k3-free</p>
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Quick Actions</span>
+            <p className="mt-2 text-sm font-semibold text-slate-300">Approve · Edit · Reject · Assign to Helper</p>
           </div>
         </div>
 
@@ -171,9 +203,9 @@ export default function AiModerationQueuePage() {
                 <thead className="border-b border-slate-800 bg-slate-900/80 text-xs font-semibold uppercase tracking-wider text-slate-400">
                   <tr>
                     <th className="px-6 py-4">Task / Customer</th>
-                    <th className="px-6 py-4">Risk & Confidence</th>
+                    <th className="px-6 py-4">Policy Flags</th>
                     <th className="px-6 py-4">Flags / Reasons</th>
-                    <th className="px-6 py-4">AI Model</th>
+                    <th className="px-6 py-4">Created</th>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
@@ -263,6 +295,18 @@ export default function AiModerationQueuePage() {
                             >
                               Edit
                             </button>
+                            {/* TEMP: MANUAL_MODERATION_MODE — Assign to Helper button */}
+                            <button
+                              onClick={() => {
+                                setSelectedTask(task);
+                                setSelectedHelperId('');
+                                setModalType('assign');
+                                void fetchHelpers();
+                              }}
+                              className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-500 transition"
+                            >
+                              Assign
+                            </button>
                             <button
                               onClick={() => {
                                 setSelectedTask(task);
@@ -315,8 +359,10 @@ export default function AiModerationQueuePage() {
               {modalType === 'approve' && '✅ Approve Task'}
               {modalType === 'reject' && '🚫 Reject Task'}
               {modalType === 'edit' && '✏️ Edit & Approve Task'}
+              {modalType === 'assign' && '🦸 Approve & Assign to Helper'}
             </h3>
             <p className="mt-1 text-xs text-slate-400">Task ID: {selectedTask.taskId}</p>
+            <p className="mt-0.5 text-xs font-semibold text-slate-300">{selectedTask.title}</p>
 
             {modalType === 'edit' && (
               <div className="mt-4 space-y-3">
@@ -341,6 +387,30 @@ export default function AiModerationQueuePage() {
               </div>
             )}
 
+            {/* TEMP: MANUAL_MODERATION_MODE — helper picker */}
+            {modalType === 'assign' && (
+              <div className="mt-4">
+                <label className="text-xs font-semibold text-slate-400">Select Helper</label>
+                {helpersLoading ? (
+                  <p className="mt-2 text-xs text-slate-400 animate-pulse">Loading helpers...</p>
+                ) : (
+                  <select
+                    value={selectedHelperId}
+                    onChange={(e) => setSelectedHelperId(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
+                  >
+                    <option value="">— Select a helper —</option>
+                    {helpers.map((h) => (
+                      <option key={h.helperId} value={h.helperId}>
+                        {h.name} · {h.phone}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <p className="mt-1 text-[11px] text-slate-500">Only KYC-approved helpers are listed. Task will be directly assigned and helper will be notified.</p>
+              </div>
+            )}
+
             <div className="mt-4">
               <label className="text-xs font-semibold text-slate-400">Admin Remarks</label>
               <textarea
@@ -360,15 +430,18 @@ export default function AiModerationQueuePage() {
                 Cancel
               </button>
               <button
-                disabled={submitting}
-                onClick={() =>
-                  handleAction(
-                    modalType === 'approve' ? 'approve' : modalType === 'reject' ? 'reject' : 'edit-approve'
-                  )
-                }
-                className={`rounded-xl px-5 py-2 text-xs font-bold text-white transition ${
+                disabled={submitting || (modalType === 'assign' && !selectedHelperId)}
+                onClick={() => {
+                  if (modalType === 'approve') handleAction('approve');
+                  else if (modalType === 'reject') handleAction('reject');
+                  else if (modalType === 'edit') handleAction('edit-approve');
+                  else if (modalType === 'assign') handleAction('approve-and-assign');
+                }}
+                className={`rounded-xl px-5 py-2 text-xs font-bold text-white transition disabled:opacity-50 ${
                   modalType === 'reject'
                     ? 'bg-red-600 hover:bg-red-500'
+                    : modalType === 'assign'
+                    ? 'bg-violet-600 hover:bg-violet-500'
                     : 'bg-emerald-600 hover:bg-emerald-500'
                 }`}
               >

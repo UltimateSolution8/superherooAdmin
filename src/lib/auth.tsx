@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     );
     if (!res.ok) return { ok: false, error: res.errorText };
-    if (!['ADMIN', 'SUPPORT', 'KYC'].includes(res.data.user?.role || '')) return { ok: false, error: 'admin_only' };
+    if (!['ADMIN', 'ADMIN_READONLY', 'SUPPORT', 'KYC'].includes(res.data.user?.role || '')) return { ok: false, error: 'admin_only' };
     persist({ accessToken: res.data.accessToken, refreshToken: res.data.refreshToken, user: res.data.user });
     return { ok: true };
   }, [persist]);
@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     );
     if (!res.ok) return { ok: false, error: res.errorText };
-    if (!['ADMIN', 'SUPPORT', 'KYC'].includes(res.data.user?.role || '')) return { ok: false, error: 'admin_only' };
+    if (!['ADMIN', 'ADMIN_READONLY', 'SUPPORT', 'KYC'].includes(res.data.user?.role || '')) return { ok: false, error: 'admin_only' };
     persist({ accessToken: res.data.accessToken, refreshToken: res.data.refreshToken, user: res.data.user });
     return { ok: true };
   }, [persist]);
